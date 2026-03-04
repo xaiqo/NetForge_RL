@@ -1,26 +1,16 @@
-# CybORG Changelog
-## Version 3.1
-- Model of bandwidth usage changed to now randomly sample actions to use bandwidth and dropping actions after the bandwidth usage is exceeded
-- Parallel Step function now also returns data for agents that took an action as well as active agents in the environment
-- The balance of the DroneSwarm Scenario has been changed to weaken the effectiveness of the RetakeControl action and increase the effectiveness of the RemoveOtherSessions action
-## Version 3.0
-- DroneSwarm Scenario added for CAGE Challenge 3
-- Scenarios are now created by a ScenarioGenerator object
-- Backwards compatibility with YAML files is enabled by the FileReaderScenarioGenerator
-- Parallel actions for multi-agents are supported
-- PettingZoo ParallelEnv compatible wrappers are available
-- Remote actions now consume bandwidth in the system and may fail if the maximum bandwidth capacity is exceeded
-- evaluation.py has been updated to evaluate CAGE Challenge 3
-## Version 2.1
-- evaluation.py now calls agent.end_episode() at the end of an evaluation episode
-## Version 2.0
-- Scenario 2 added.
-- New exploit actions added for red team.
-- New decoy actions added for blue team.
-## Version 1.2
-- Misinform action added.
-## Version 1.1
-- Tutorials added to Tutorial folder.
-- Bugfixes
-## Version 1.0
-- Scenarios 1 & 1b added.
+# Changelog
+
+All notable changes to the `marl_cyborg` project will be documented in this file.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [3.0.0] - 2026-02-28
+### Added
+- **PettingZoo API Core Integration**: Created `marl_cyborg/environment/parallel_env.py` substituting the legacy wrapper paradigm with `pettingzoo.ParallelEnv`, explicitly allowing concurrent multi-agent action steps.
+- **Gymnasium Box Compatibility**: All spaces natively map to `gymnasium.spaces` APIs instead of arbitrary nested classes.
+- **`BaseAction` / `BaseObservation` Abstract Hierarchy**: Abstracted action mutation. Cyber attacks no longer edit the state directly, but rather return a theoretical JSON impact via `ActionEffect` allowing the environment to resolve simultaneity conflicts natively.
+- **Python 3.12 Support (Native)**: Enforced via the new `pyproject.toml` definition.
+- **IPFragmentationAction Proof of Concept**: Added a reference action block mimicking deep IP fragmentation exploits to prove structural extensibility.
+
+### Removed
+- **OpenAI Gym Legacy Layers**: Deleted `/Agents/Wrappers/` completely. Removed `ChallengeWrapper`, `OpenAIGymWrapper`, and `TrueTableWrapper`.
+- **Demo / Unnecessary Dependencies**: Removed legacy `/Evaluation/`, unneeded testing stubs, setup.py files, and legacy `requirements.txt`.
