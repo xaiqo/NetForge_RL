@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 class RansomwareScenario(BaseScenario):
     """
     Scenario: Red Team aggressively deploys ransomware.
+
     - Red is highly rewarded for system_integrity compromise (Impact actions).
     - Red ignores stealth (virtually no noise penalty).
     - Blue loses massive points for impacted systems and must isolate quickly.

@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 class AptEspionageScenario(BaseScenario):
     """
     Scenario: Red Team acts as an Advanced Persistent Threat.
+
     - Red is rewarded for uninterrupted stealthy persistence.
     - Red is penalized heavily if discovered or isolated by Blue.
     """

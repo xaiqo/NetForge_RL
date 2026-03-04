@@ -2,8 +2,9 @@ from marl_cyborg.core.action import BaseAction, ActionEffect
 
 
 class IsolateHost(BaseAction):
-    """
-    Disconnects a compromised host completely from the network infrastructure.
+    """Disconnects a compromised host completely from the network
+
+    infrastructure.
 
     This prevents lateral movement or data exfiltration but incurs an availability
     penalty on the Blue Team's scoring mechanism.
@@ -17,8 +18,9 @@ class IsolateHost(BaseAction):
         super().__init__(agent_id, target_ip=target_ip)
 
     def validate(self, global_state) -> bool:
-        """
-        Validates if the target host theoretically exists and can be isolated.
+        """Validates if the target host theoretically exists and can be
+
+        isolated.
 
         Args:
             global_state (GlobalNetworkState): Engine baseline state.
@@ -29,8 +31,7 @@ class IsolateHost(BaseAction):
         return True
 
     def execute(self, global_state) -> ActionEffect:
-        """
-        Implements the zero-trust isolation delta across the specific node.
+        """Implements the zero-trust isolation delta across the specific node.
 
         Args:
             global_state (GlobalNetworkState): Snapshot of current network topology.
@@ -46,8 +47,7 @@ class IsolateHost(BaseAction):
 
 
 class RestoreHost(BaseAction):
-    """
-    Re-establishes network connectivity for a previously isolated host.
+    """Re-establishes network connectivity for a previously isolated host.
 
     Reverses the `IsolateHost` effect, bringing the node back online and
     restoring critical business availability.
@@ -61,8 +61,7 @@ class RestoreHost(BaseAction):
         super().__init__(agent_id, target_ip=target_ip)
 
     def validate(self, global_state) -> bool:
-        """
-        Evaluates requirements for network restoration natively.
+        """Evaluates requirements for network restoration natively.
 
         Args:
             global_state (GlobalNetworkState): Engine baseline state.
@@ -73,8 +72,7 @@ class RestoreHost(BaseAction):
         return True
 
     def execute(self, global_state) -> ActionEffect:
-        """
-        Removes the isolation quarantine delta from the designated host.
+        """Removes the isolation quarantine delta from the designated host.
 
         Args:
             global_state: Network configuration array.
@@ -90,8 +88,7 @@ class RestoreHost(BaseAction):
 
 
 class Remove(BaseAction):
-    """
-    Evicts unauthorized threat actors from a compromised element.
+    """Evicts unauthorized threat actors from a compromised element.
 
     Targets and kills anomalous processes, rolling local user privileges back
     to a stable state without requiring a full system format.
@@ -105,8 +102,7 @@ class Remove(BaseAction):
         super().__init__(agent_id, target_ip=target_ip)
 
     def validate(self, global_state) -> bool:
-        """
-        Checks Blue operational bounds prior to execution.
+        """Checks Blue operational bounds prior to execution.
 
         Args:
             global_state: Reference engine configuration.
@@ -117,8 +113,9 @@ class Remove(BaseAction):
         return True
 
     def execute(self, global_state) -> ActionEffect:
-        """
-        Translates the threat eviction into a measurable privilege reduction delta.
+        """Translates the threat eviction into a measurable privilege reduction
+
+        delta.
 
         Args:
             global_state: Reference engine configuration.
@@ -134,8 +131,9 @@ class Remove(BaseAction):
 
 
 class RestoreFromBackup(BaseAction):
-    """
-    Executes a bare-metal imaging recovery to purge advanced persistent threats (APTs).
+    """Executes a bare-metal imaging recovery to purge advanced persistent
+
+    threats (APTs).
 
     An extreme but definitive mitigation vector that eradicates persistent malware,
     but takes significantly more time and cost than localized `Remove` actions.
@@ -149,8 +147,7 @@ class RestoreFromBackup(BaseAction):
         super().__init__(agent_id, target_ip=target_ip)
 
     def validate(self, global_state) -> bool:
-        """
-        Ensures execution feasibility regarding orchestration limits.
+        """Ensures execution feasibility regarding orchestration limits.
 
         Args:
             global_state: Simulation context.
@@ -161,8 +158,9 @@ class RestoreFromBackup(BaseAction):
         return True
 
     def execute(self, global_state) -> ActionEffect:
-        """
-        Computes a comprehensive reversion of the host node's state back to pristine.
+        """Computes a comprehensive reversion of the host node's state back to
+
+        pristine.
 
         Args:
             global_state: Simulation context.

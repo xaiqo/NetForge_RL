@@ -2,8 +2,7 @@ from marl_cyborg.core.action import BaseAction, ActionEffect
 
 
 class Monitor(BaseAction):
-    """
-    Deploys active traffic analysis scanning on a specific subnet or host.
+    """Deploys active traffic analysis scanning on a specific subnet or host.
 
     Provides high-fidelity telemetry to the Blue Team's observation space,
     increasing the probability of detecting stealthy Red anomalous behaviors.
@@ -17,8 +16,9 @@ class Monitor(BaseAction):
         super().__init__(agent_id, target_ip=target_ip)
 
     def validate(self, global_state) -> bool:
-        """
-        Validates the capability of the agent to monitor the requested sector.
+        """Validates the capability of the agent to monitor the requested
+
+        sector.
 
         Args:
             global_state (GlobalNetworkState): Simulation snapshot.
@@ -29,9 +29,10 @@ class Monitor(BaseAction):
         return True
 
     def execute(self, global_state) -> ActionEffect:
-        """
-        Calculates the expanded telemetry data yielded by the active monitor.
-        Immediately updates Blue's 'Fog of War' knowledge graph across that subnet.
+        """Calculates the expanded telemetry data yielded by the active
+
+        monitor. Immediately updates Blue's 'Fog of War' knowledge graph across
+        that subnet.
 
         Args:
             global_state (GlobalNetworkState): Current architecture baseline.
@@ -63,8 +64,9 @@ class Monitor(BaseAction):
 
 
 class Analyze(BaseAction):
-    """
-    Executes a forensic deep scan of a specific host for malware indicators (IoCs).
+    """Executes a forensic deep scan of a specific host for malware indicators
+
+    (IoCs).
 
     More intrusive than passive `Monitor` actions; identifies specific unauthorized
     privilege escalations or compromised system integrity states.
@@ -78,8 +80,7 @@ class Analyze(BaseAction):
         super().__init__(agent_id, target_ip=target_ip)
 
     def validate(self, global_state) -> bool:
-        """
-        Confirms target reachability prior to the analysis scan.
+        """Confirms target reachability prior to the analysis scan.
 
         Args:
             global_state: Network configuration matrix.
@@ -90,9 +91,10 @@ class Analyze(BaseAction):
         return True
 
     def execute(self, global_state) -> ActionEffect:
-        """
-        Computes forensic findings and updates Blue observation knowledge base.
-        Pulls exact IoCs (Indicators of Compromise) and the compromised_by footprint.
+        """Computes forensic findings and updates Blue observation knowledge
+
+        base. Pulls exact IoCs (Indicators of Compromise) and the
+        compromised_by footprint.
 
         Args:
             global_state: Network configuration matrix.

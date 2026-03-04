@@ -6,8 +6,10 @@ from marl_cyborg.core.state import GlobalNetworkState, Subnet, Host
 
 
 class NetworkGenerator:
-    """
-    Procedurally generates or loads dynamic network topologies for MARL training.
+    """Procedurally generates or loads dynamic network topologies for MARL
+
+    training.
+
     Prevents agents from overfitting to a static 10-node architecture.
     """
 
@@ -15,8 +17,9 @@ class NetworkGenerator:
         self.config_path = config_path
 
     def generate(self, seed: Optional[int] = None) -> GlobalNetworkState:
-        """
-        Generates the architecture. If a config path was provided, loads deterministically.
+        """Generates the architecture.
+
+        If a config path was provided, loads deterministically.
         Otherwise, procedurally generates a randomized topology.
         """
         if seed is not None:
@@ -28,8 +31,8 @@ class NetworkGenerator:
         return self._generate_procedural()
 
     def _generate_procedural(self) -> GlobalNetworkState:
-        """
-        Creates a randomized network with 2-4 subnets and 5-15 hosts.
+        """Creates a randomized network with 2-4 subnets and 5-15 hosts.
+
         Randomizes IP bounds and initial decoy placements.
         """
         state = GlobalNetworkState()
@@ -55,6 +58,24 @@ class NetworkGenerator:
                 # Randomly place a Blue Team decoy (15% chance)
                 if random.random() < 0.15:
                     host.decoy = random.choice(['Apache', 'SSHD', 'Tomcat', 'active'])
+                else:
+                    # Assign legitimate OS profiles and CVEs to real hosts
+                    profiles = [
+                        ('Windows_10', ['RDP', 'SMB'], ['CVE-2019-0708', 'MS17-010']),
+                        (
+                            'Windows_Server_2016',
+                            ['SMB', 'IIS'],
+                            ['MS17-010', 'CVE-2021-44228'],
+                        ),
+                        ('Linux_Ubuntu', ['SSH', 'Apache'], ['CVE-2021-44228', 'V4L2']),
+                        ('Linux_CentOS', ['SSH', 'Tomcat'], ['CVE-2021-44228']),
+                    ]
+                    chosen_os, chosen_services, potential_cves = random.choice(profiles)
+                    host.os = chosen_os
+                    host.services = chosen_services
+                    # Randomly assign 0 to 2 specific vulnerabilities from the valid pool to prevent guaranteed exploitation
+                    num_vulns = random.randint(0, min(2, len(potential_cves)))
+                    host.vulnerabilities = random.sample(potential_cves, num_vulns)
 
                 state.register_host(host)
 

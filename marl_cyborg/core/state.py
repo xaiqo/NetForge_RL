@@ -28,8 +28,8 @@ class Subnet:
 
 
 class GlobalNetworkState:
-    """
-    The Single Source of Truth for the H-MARL Physics Engine.
+    """The Single Source of Truth for the H-MARL Physics Engine.
+
     Tracks all Subnets, Hosts, and current privilege/isolation statuses.
     """
 
@@ -38,6 +38,8 @@ class GlobalNetworkState:
         self.all_hosts: Dict[str, Host] = {}
         # Tracks which IPs each agent currently knows about (Fog of War)
         self.agent_knowledge: Dict[str, Set[str]] = {}
+        # Tracks remaining energy/budget for temporal action constraints
+        self.agent_energy: Dict[str, int] = {}
 
     def update_knowledge(self, agent_id: str, ip: str):
         """Adds an IP address to the agent's knowledge graph."""
@@ -49,14 +51,17 @@ class GlobalNetworkState:
         self.subnets[subnet.cidr] = subnet
 
     def register_host(self, host: Host):
-        """Registers a host to both the global fast-lookup and its specific subnet."""
+        """Registers a host to both the global fast-lookup and its specific
+
+        subnet.
+        """
         self.all_hosts[host.ip] = host
         if host.subnet_cidr in self.subnets:
             self.subnets[host.subnet_cidr].add_host(host)
 
     def apply_delta(self, delta_key: str, delta_value: str):
-        """
-        Dynamically mutates the network graph based on dot-notation paths.
+        """Dynamically mutates the network graph based on dot-notation paths.
+
         Example: apply_delta("hosts/10.0.0.5/status", "isolated")
         Example: apply_delta("knowledge/red_agent_0/10.0.0.5", "True")
         """
@@ -77,8 +82,9 @@ class GlobalNetworkState:
             self.update_knowledge(agent_id, ip)
 
     def can_route_to(self, target_ip: str) -> bool:
-        """
-        Evaluates complex network topology rules for routing reachability.
+        """Evaluates complex network topology rules for routing
+
+        reachability.
         """
         if target_ip not in self.all_hosts:
             return False
@@ -107,3 +113,37 @@ class GlobalNetworkState:
             return has_dmz_pivot or has_corp_pivot
 
         return False
+
+    def reallocate_dhcp(self):
+        """Simulates dynamic mid-episode restructuring of the network.
+
+        Shuffles the IP addresses of Hosts on Internal and Secure
+        subnets. Strips the stale IPs from agent knowledge vectors
+        mechanically without notification.
+        """
+        import random
+
+        for subnet in self.subnets.values():
+            if '192.168.1' in subnet.cidr:
+                continue  # Skip DMZ so red agents don't completely lose initial routing access
+
+            hosts = list(subnet.hosts.values())
+            if not hosts:
+                continue
+
+            base_ip = subnet.cidr.split('.0/')[0]
+            new_ips = random.sample(range(1, 250), len(hosts))
+
+            new_subnet_hosts = {}
+            for i, host in enumerate(hosts):
+                # Erase old routing
+                del self.all_hosts[host.ip]
+
+                # Assign new IP
+                host.ip = f'{base_ip}.{new_ips[i]}'
+
+                # Establish new routing table entries
+                self.all_hosts[host.ip] = host
+                new_subnet_hosts[host.ip] = host
+
+            subnet.hosts = new_subnet_hosts

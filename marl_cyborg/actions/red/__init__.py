@@ -7,6 +7,7 @@ from .exploits import (
 )
 from .privilege_escalation import PrivilegeEscalate, JuicyPotato, V4L2KernelExploit
 from .impact import Impact
+from .coordination import ShareIntelligence
 
 __all__ = [
     'NetworkScan',
@@ -20,4 +21,5 @@ __all__ = [
     'JuicyPotato',
     'V4L2KernelExploit',
     'Impact',
+    'ShareIntelligence',
 ]

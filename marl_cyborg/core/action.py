@@ -6,7 +6,10 @@ if TYPE_CHECKING:
 
 
 class ActionEffect:
-    """Encapsulates the resulting state changes from an action for conflict resolution."""
+    """Encapsulates the resulting state changes from an action for conflict
+
+    resolution.
+    """
 
     def __init__(
         self,
@@ -20,8 +23,8 @@ class ActionEffect:
 
 
 class BaseAction(ABC):
-    """
-    Modular Base Action for the MARL CybORG Environment.
+    """Modular Base Action for the MARL CybORG Environment.
+
     All highly specific network attacks (Layer 2 - Layer 7) inherit from this class.
     """
 
@@ -30,23 +33,27 @@ class BaseAction(ABC):
         agent_id: str,
         target_ip: Optional[str] = None,
         source_ip: Optional[str] = None,
+        cost: int = 1,
     ):
         self.agent_id = agent_id
         self.target_ip = target_ip
         self.source_ip = source_ip
+        self.cost = cost
 
     @abstractmethod
     def validate(self, global_state: 'GlobalNetworkState') -> bool:
-        """
-        Checks if the action is physically possible in the current network state
-        (e.g., is there a route? is the port open?).
+        """Checks if the action is physically possible in the current network
+
+        state (e.g., is there a route?
+
+        is the port open?).
         """
         pass
 
     @abstractmethod
     def execute(self, global_state: 'GlobalNetworkState') -> ActionEffect:
-        """
-        Computes the theoretical effect of the action.
+        """Computes the theoretical effect of the action.
+
         Note: State is NOT mutated directly here. Mutations are returned via ActionEffect
         to allow the Environment to resolve simultaneous multi-agent collisions.
         """

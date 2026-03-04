@@ -6,6 +6,7 @@ import numpy as np
 class BLineAgent:
     """
     Scripted Red Agent that executes the exact B-Line killchain:
+
     DiscoverRemoteSystems -> DiscoverNetworkServices -> ExploitRemoteService -> PrivilegeEscalate -> Impact
     """
 

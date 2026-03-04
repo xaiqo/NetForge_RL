@@ -3,9 +3,12 @@ from typing import Any, List
 
 
 class BaseObservation:
-    """
-    Represents the local view of the network from a single Agent's perspective.
-    In MARL, Red and Blue teams receive fundamentally different subsets of the global state.
+    """Represents the local view of the network from a single Agent's
+
+    perspective.
+
+    In MARL, Red and Blue teams receive fundamentally different subsets
+    of the global state.
     """
 
     def __init__(self, agent_id: str):
@@ -21,10 +24,13 @@ class BaseObservation:
         self.network_telemetry = {}
 
     def update_from_state(self, global_state: Any, action_effects: List[Any]):
-        """
-        Filters the global state down to only what is observable by this specific agent.
-        Since we don't have the fully simulated GlobalNetworkState yet, we generate dynamic
-        dummy telemetry that structurally mimics the CAGE challenge dictionaries.
+        """Filters the global state down to only what is observable by this
+
+        specific agent.
+
+        Since we don't have the fully simulated GlobalNetworkState yet,
+        we generate dynamic dummy telemetry that structurally mimics the
+        CAGE challenge dictionaries.
         """
         # Parse realistic data from the OOP GlobalNetworkState
         if global_state:
@@ -50,9 +56,12 @@ class BaseObservation:
             self.objective_vector[2] = 1.0
 
     def to_numpy(self, max_size: int = 256) -> np.ndarray:
-        """
-        Serializes the object-oriented observation into a fixed-size Tensor for RL Neural Networks.
-        This must be mathematically rigorous. If a node isn't seen, its index must be explicitly 0.
+        """Serializes the object-oriented observation into a fixed-size Tensor
+
+        for RL Neural Networks.
+
+        This must be mathematically rigorous. If a node isn't seen, its
+        index must be explicitly 0.
         """
         vector = np.zeros(max_size, dtype=np.float32)
         idx = 0

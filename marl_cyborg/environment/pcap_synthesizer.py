@@ -22,9 +22,9 @@ from scapy.utils import wrpcap
 
 
 class PCAPSynthesizer:
-    """
-    Translates abstract RL actions (marl_cyborg_v3) into modeled Scapy packets
-    for offline IDS ML model training.
+    """Translates abstract RL actions (marl_cyborg_v3) into modeled Scapy
+
+    packets for offline IDS ML model training.
 
     CRITICAL SAFETY CONSTRAINT:
     All operations are strictly offline. Packets are generated purely in memory
@@ -37,10 +37,11 @@ class PCAPSynthesizer:
     def append_to_pcap(
         self, packets: Union[Packet, List[Packet]], filename: str = None
     ) -> None:
-        """
-        Appends Scapy packet object(s) to a .pcap file.
-        ML Feature extraction pipelines will read these files to parse out
-        headers, metadata, and simulated behaviors matching the signatures.
+        """Appends Scapy packet object(s) to a .pcap file.
+
+        ML Feature extraction pipelines will read these files to parse
+        out headers, metadata, and simulated behaviors matching the
+        signatures.
         """
         target_file = filename if filename is not None else self.default_filename
         # scapy's wrpcap supports appending directly
@@ -52,8 +53,7 @@ class PCAPSynthesizer:
     def craft_syn_scan(
         self, src_mac: str, dst_mac: str, src_ip: str, dst_ip: str, dst_port: int
     ) -> Packet:
-        """
-        Models a TCP SYN scan (Half-open scan).
+        """Models a TCP SYN scan (Half-open scan).
 
         IDS ML Features:
           - High frequency of small packets with ONLY the SYN flag set.
@@ -73,8 +73,7 @@ class PCAPSynthesizer:
     def craft_udp_scan(
         self, src_mac: str, dst_mac: str, src_ip: str, dst_ip: str, dst_port: int
     ) -> Packet:
-        """
-        Models a UDP port scan.
+        """Models a UDP port scan.
 
         IDS ML Features:
           - Small, empty UDP datagrams targeting various ports.
@@ -94,8 +93,7 @@ class PCAPSynthesizer:
     def craft_arp_spoof(
         self, attacker_mac: str, target_ip: str, spoofed_ip: str
     ) -> Packet:
-        """
-        Models ARP Spoofing (Cache Poisoning) signature.
+        """Models ARP Spoofing (Cache Poisoning) signature.
 
         IDS ML Features:
           - Unsolicited ARP Replies (is-at) without corresponding Requests.
@@ -113,8 +111,7 @@ class PCAPSynthesizer:
     def craft_deauthentication(
         self, target_mac: str, bssid: str, reason_code: int = 7
     ) -> Packet:
-        """
-        Models a Wi-Fi Deauthentication frame.
+        """Models a Wi-Fi Deauthentication frame.
 
         IDS ML Features:
           - Flood of management frames (Type 0, Subtype 12).
@@ -131,8 +128,7 @@ class PCAPSynthesizer:
     def craft_disassociation(
         self, target_mac: str, bssid: str, reason_code: int = 8
     ) -> Packet:
-        """
-        Models a Wi-Fi Disassociation frame.
+        """Models a Wi-Fi Disassociation frame.
 
         IDS ML Features:
           - Management frames (Type 0, Subtype 10).
@@ -152,8 +148,7 @@ class PCAPSynthesizer:
     def craft_ip_fragmentation(
         self, src_mac: str, dst_mac: str, src_ip: str, dst_ip: str, payload: bytes
     ) -> List[Packet]:
-        """
-        Models NIDS Evasion via IP Fragmentation.
+        """Models NIDS Evasion via IP Fragmentation.
 
         IDS ML Features:
           - Small IP headers with the More Fragments (MF) flag set.
@@ -183,8 +178,7 @@ class PCAPSynthesizer:
         exfil_domain: str,
         secret_data: str,
     ) -> Packet:
-        """
-        Models Data Exfiltration via DNS tunneling.
+        """Models Data Exfiltration via DNS tunneling.
 
         IDS ML Features:
           - High Shannon entropy in DNS subdomains.
@@ -213,8 +207,7 @@ class PCAPSynthesizer:
         dst_ip: str,
         hidden_payload: bytes,
     ) -> Packet:
-        """
-        Models Covert C2 or Data Exfil via ICMP payload.
+        """Models Covert C2 or Data Exfil via ICMP payload.
 
         IDS ML Features:
           - Standard pings typically have small, predictable payloads (e.g., repeating chars).
@@ -240,8 +233,9 @@ class PCAPSynthesizer:
         dst_port: int,
         seq_num: int,
     ) -> List[Packet]:
-        """
-        Models incomplete TCP handshakes (e.g., SYN-ACK received, but no ACK sent).
+        """Models incomplete TCP handshakes (e.g., SYN-ACK received, but no ACK
+
+        sent).
 
         IDS ML Features:
           - Asymmetric traffic flows.
@@ -275,8 +269,7 @@ class PCAPSynthesizer:
     def craft_tcp_rst(
         self, src_mac: str, dst_mac: str, src_ip: str, dst_ip: str, dst_port: int
     ) -> Packet:
-        """
-        Models anomalous TCP RST (Reset) packets.
+        """Models anomalous TCP RST (Reset) packets.
 
         IDS ML Features:
           - Used heavily in session hijacking, port scanning teardowns, or aggressive evasions.
@@ -298,9 +291,12 @@ class PCAPSynthesizer:
     def craft_benign_http_traffic(
         self, src_mac: str, dst_mac: str, src_ip: str, dst_ip: str
     ) -> List[Packet]:
-        """
-        Models normal web browsing traffic (TCP Handshake -> HTTP GET -> ACK -> Teardown).
-        This establishes a baseline of benign flow duration, byte counts, and packet rates.
+        """Models normal web browsing traffic (TCP Handshake -> HTTP GET -> ACK
+
+        -> Teardown).
+
+        This establishes a baseline of benign flow duration, byte
+        counts, and packet rates.
         """
         sport = random.randint(1024, 65535)
         seq_num = random.randint(1000, 9000)
@@ -343,8 +339,8 @@ class PCAPSynthesizer:
         dst_ip: str,
         domain: str = 'www.google.com',
     ) -> Packet:
-        """
-        Models standard, expected DNS resolution traffic.
+        """Models standard, expected DNS resolution traffic.
+
         Provides a baseline for normal query length, TTLs, and entropy.
         """
         pkt = (
@@ -358,9 +354,10 @@ class PCAPSynthesizer:
     def craft_benign_arp_broadcasts(
         self, src_mac: str, src_ip: str, target_ip: str
     ) -> Packet:
-        """
-        Models standard who-has ARP broadcast behavior.
-        Normal baseline compared to unsolicited is-at ARP spoofing frames.
+        """Models standard who-has ARP broadcast behavior.
+
+        Normal baseline compared to unsolicited is-at ARP spoofing
+        frames.
         """
         pkt = Ether(dst='ff:ff:ff:ff:ff:ff', src=src_mac) / ARP(
             op=1, pdst=target_ip, psrc=src_ip, hwsrc=src_mac
@@ -378,8 +375,10 @@ class PCAPSynthesizer:
         attacker_ip: str,
         original_packet: Packet = None,
     ) -> Packet:
-        """
-        Models a network defense (e.g., IsolateHost) response dropping an attacker's packet.
+        """Models a network defense (e.g., IsolateHost) response dropping an
+
+        attacker's packet.
+
         ICMP Type 3, Code 1 (Host Unreachable).
         """
         # Note: The original packet's IP header and top 8 bytes of payload are typically included in ICMP unreachable
@@ -404,9 +403,9 @@ class PCAPSynthesizer:
         attacker_port: int,
         target_port: int,
     ) -> Packet:
-        """
-        Models an active defense (e.g., BlockPort) where a firewall proactively sends a RST
-        to terminate a malicious connection.
+        """Models an active defense (e.g., BlockPort) where a firewall
+
+        proactively sends a RST to terminate a malicious connection.
         """
         pkt = (
             Ether(src=fw_mac, dst=attacker_mac)

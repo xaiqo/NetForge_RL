@@ -2,8 +2,9 @@ from marl_cyborg.core.action import BaseAction, ActionEffect
 
 
 class NetworkScan(BaseAction):
-    """
-    Executes a wide network scan across a specified subnet to map active IP addresses.
+    """Executes a wide network scan across a specified subnet to map active IP
+
+    addresses.
 
     This action represents the initial reconnaissance phase of the Cyber Kill Chain,
     typically mapping to MITRE ATT&CK T1046 (Network Service Scanning).
@@ -14,11 +15,12 @@ class NetworkScan(BaseAction):
     """
 
     def __init__(self, agent_id: str, target_subnet: str):
-        super().__init__(agent_id, target_ip=target_subnet)
+        super().__init__(agent_id, target_ip=target_subnet, cost=5)
 
     def validate(self, global_state) -> bool:
-        """
-        Validates whether the agent has physical or logical routing to the target subnet.
+        """Validates whether the agent has physical or logical routing to the
+
+        target subnet.
 
         Args:
             global_state (GlobalNetworkState): The current state of the architecture.
@@ -29,8 +31,9 @@ class NetworkScan(BaseAction):
         return True
 
     def execute(self, global_state) -> ActionEffect:
-        """
-        Processes the scan without mutating the state, returning observations.
+        """Processes the scan without mutating the state, returning
+
+        observations.
 
         Args:
             global_state (GlobalNetworkState): The current state of the architecture.
@@ -46,8 +49,9 @@ class NetworkScan(BaseAction):
 
 
 class DiscoverRemoteSystems(BaseAction):
-    """
-    Executes a targeted Ping Sweep against a subnet to explicitly identify host machines.
+    """Executes a targeted Ping Sweep against a subnet to explicitly identify
+
+    host machines.
 
     This action simulates ICMP Echo Requests (Ping Sweeps) or ARP broadcasts to find
     live endpoints, susceptible to deception from Blue team honeypots.
@@ -58,11 +62,10 @@ class DiscoverRemoteSystems(BaseAction):
     """
 
     def __init__(self, agent_id: str, target_subnet: str):
-        super().__init__(agent_id, target_ip=target_subnet)
+        super().__init__(agent_id, target_ip=target_subnet, cost=3)
 
     def validate(self, global_state) -> bool:
-        """
-        Validates routing path availability to the target broadcast address.
+        """Validates routing path availability to the target broadcast address.
 
         Args:
             global_state (GlobalNetworkState): The current state of the architecture.
@@ -73,9 +76,9 @@ class DiscoverRemoteSystems(BaseAction):
         return True
 
     def execute(self, global_state) -> ActionEffect:
-        """
-        Identifies active hosts in the subnet. Accounts for misinformation campaigns
-        where Blue agents supply fake decoy arrays.
+        """Identifies active hosts in the subnet. Accounts for misinformation
+
+        campaigns where Blue agents supply fake decoy arrays.
 
         Args:
             global_state (GlobalNetworkState): The current network state.
@@ -105,8 +108,9 @@ class DiscoverRemoteSystems(BaseAction):
 
 
 class DiscoverNetworkServices(BaseAction):
-    """
-    Executes an intrusive port scan against a specific host to enumerate running daemons.
+    """Executes an intrusive port scan against a specific host to enumerate
+
+    running daemons.
 
     Often simulates an `nmap -sS -sV` scan to identify vulnerable service banners on open ports.
 
@@ -116,11 +120,12 @@ class DiscoverNetworkServices(BaseAction):
     """
 
     def __init__(self, agent_id: str, target_ip: str):
-        super().__init__(agent_id, target_ip=target_ip)
+        super().__init__(agent_id, target_ip=target_ip, cost=2)
 
     def validate(self, global_state) -> bool:
-        """
-        Confirms target host is active and packet routing is unblocked by firewalls.
+        """Confirms target host is active and packet routing is unblocked by
+
+        firewalls.
 
         Args:
             global_state (GlobalNetworkState): The current network state.
@@ -131,9 +136,9 @@ class DiscoverNetworkServices(BaseAction):
         return True
 
     def execute(self, global_state) -> ActionEffect:
-        """
-        Returns the exposed service ports on the target. Interacts heavily with
-        decoy and honeypot configurations deployed by the Blue Agent.
+        """Returns the exposed service ports on the target. Interacts heavily
+
+        with decoy and honeypot configurations deployed by the Blue Agent.
 
         Args:
             global_state (GlobalNetworkState): The current architecture state.
@@ -151,7 +156,9 @@ class DiscoverNetworkServices(BaseAction):
             elif host.decoy == 'Tomcat':
                 obs_data['services'] = ['Fake_Tomcat_8080']
             else:
-                obs_data['services'] = ['Real_IIS_443']
+                obs_data['services'] = host.services
+                obs_data['os'] = host.os
+                obs_data['vulnerabilities'] = host.vulnerabilities
 
         # Update knowledge that we scanned this host
         knowledge_deltas = {f'knowledge/{self.agent_id}/{self.target_ip}': 'True'}

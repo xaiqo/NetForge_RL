@@ -1,6 +1,6 @@
-"""
-MARL_CybORG v3.0 Library
-Multi-Agent Cybersecurity Simulator based on CybORG.
+"""MARL_CybORG v3.0 Library Multi-Agent Cybersecurity Simulator based on
+
+CybORG.
 """
 
 __version__ = '3.0.0'

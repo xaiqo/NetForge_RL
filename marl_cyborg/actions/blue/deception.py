@@ -2,8 +2,9 @@ from marl_cyborg.core.action import BaseAction, ActionEffect
 
 
 class DeployDecoy(BaseAction):
-    """
-    Deploys a generic high-interaction honeypot/decoy service to a target host.
+    """Deploys a generic high-interaction honeypot/decoy service to a target
+
+    host.
 
     Simulates services like Femitter or blank Apache instances to bait Red Agent
     exploitation attempts, subsequently flagging them in Blue telemetry.
@@ -17,8 +18,7 @@ class DeployDecoy(BaseAction):
         super().__init__(agent_id, target_ip=target_ip)
 
     def validate(self, global_state) -> bool:
-        """
-        Validates target host existence natively within the network map.
+        """Validates target host existence natively within the network map.
 
         Args:
             global_state (GlobalNetworkState): Simulation snapshot.
@@ -29,8 +29,9 @@ class DeployDecoy(BaseAction):
         return True
 
     def execute(self, global_state) -> ActionEffect:
-        """
-        Updates the host configuration to actively broadcast a decoy profile.
+        """Updates the host configuration to actively broadcast a decoy
+
+        profile.
 
         Args:
             global_state (GlobalNetworkState): The current baseline state.
@@ -46,8 +47,7 @@ class DeployDecoy(BaseAction):
 
 
 class DecoyApache(BaseAction):
-    """
-    Deploys a specifically profiled Apache Web Server (Port 80) honeypot.
+    """Deploys a specifically profiled Apache Web Server (Port 80) honeypot.
 
     Deceives Nmap scans and absorbs associated web-based Remote File Inclusion (RFI) exploits.
 
@@ -60,8 +60,7 @@ class DecoyApache(BaseAction):
         super().__init__(agent_id, target_ip=target_ip)
 
     def validate(self, global_state) -> bool:
-        """
-        Validation pre-checks for port conflicts and architecture readiness.
+        """Validation pre-checks for port conflicts and architecture readiness.
 
         Args:
             global_state: Baseline state.
@@ -72,8 +71,7 @@ class DecoyApache(BaseAction):
         return True
 
     def execute(self, global_state) -> ActionEffect:
-        """
-        Applies the decoy instantiation physics.
+        """Applies the decoy instantiation physics.
 
         Args:
             global_state: Baseline state.
@@ -89,8 +87,9 @@ class DecoyApache(BaseAction):
 
 
 class DecoySSHD(BaseAction):
-    """
-    Deploys a fake SSH daemon (Port 22) honeypot specifically designed to bait brute force actions.
+    """Deploys a fake SSH daemon (Port 22) honeypot specifically designed to
+
+    bait brute force actions.
 
     Args:
         agent_id (str): Target Blue agent orchestrator.
@@ -104,6 +103,7 @@ class DecoySSHD(BaseAction):
         """
         Args:
             global_state: Baseline state.
+
         Returns:
             bool: Action clearance bool.
         """
@@ -113,6 +113,7 @@ class DecoySSHD(BaseAction):
         """
         Args:
             global_state: Baseline state.
+
         Returns:
             ActionEffect: Sets the 'decoy' string to 'SSHD'.
         """
@@ -124,8 +125,9 @@ class DecoySSHD(BaseAction):
 
 
 class DecoyTomcat(BaseAction):
-    """
-    Deploys a fake Tomcat server (Port 8080) to deceive application port scans.
+    """Deploys a fake Tomcat server (Port 8080) to deceive application port
+
+    scans.
 
     Args:
         agent_id (str): Target Blue agent orchestrator.
@@ -139,6 +141,7 @@ class DecoyTomcat(BaseAction):
         """
         Args:
             global_state: Baseline state.
+
         Returns:
             bool: Action clearance bool.
         """
@@ -148,6 +151,7 @@ class DecoyTomcat(BaseAction):
         """
         Args:
             global_state: Baseline state.
+
         Returns:
             ActionEffect: Sets the 'decoy' string to 'Tomcat'.
         """
@@ -159,8 +163,9 @@ class DecoyTomcat(BaseAction):
 
 
 class Misinform(BaseAction):
-    """
-    Injects false host telemetry or alters logging infrastructure to feed Red agents fake data.
+    """Injects false host telemetry or alters logging infrastructure to feed
+
+    Red agents fake data.
 
     Disrupts adversary situational awareness by generating spoofed observations.
 
@@ -176,6 +181,7 @@ class Misinform(BaseAction):
         """
         Args:
             global_state: Baseline state.
+
         Returns:
             bool: Action clearance bool.
         """
@@ -185,6 +191,7 @@ class Misinform(BaseAction):
         """
         Args:
             global_state: Baseline state.
+
         Returns:
             ActionEffect: Activates misinformation campaign flags logically.
         """

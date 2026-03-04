@@ -9,10 +9,10 @@ from marl_cyborg.topologies.network_generator import NetworkGenerator
 
 
 class ParallelMarlCyborg(BaseMarlCyborg):
-    """
-    MARL Environment for CybORG.
-    Follows the PettingZoo Parallel API standard for simultaneous Multi-Agent execution
-    and relies exclusively on Gymnasium spaces natively.
+    """MARL Environment for CybORG.
+
+    Follows the PettingZoo Parallel API standard for simultaneous Multi-
+    Agent execution and relies exclusively on Gymnasium spaces natively.
     """
 
     metadata = {'render_modes': ['ansi'], 'name': 'marl_cyborg_v3'}
@@ -65,11 +65,13 @@ class ParallelMarlCyborg(BaseMarlCyborg):
     def reset(
         self, seed=None, options=None
     ) -> Tuple[Dict[str, np.ndarray], Dict[str, dict]]:
-        """
-        Resets the network state to initial configuration natively (Gymnasium style + PettingZoo).
+        """Resets the network state to initial configuration natively
+
+        (Gymnasium style + PettingZoo).
         """
         self.global_state = self.network_generator.generate(seed=seed)
         self.agents = self.possible_agents[:]
+        self.global_state.agent_energy = {agent: 50 for agent in self.agents}
         observations = {}
         for agent_id in self.agents:
             obs = BaseObservation(agent_id)
@@ -96,6 +98,7 @@ class ParallelMarlCyborg(BaseMarlCyborg):
     ]:
         """
         Simultaneous Step Execution Logic:
+
         1. VALIDATION: Check if actions are physically possible.
         2. EXECUTION: Compute intended state changes (ActionEffects) WITHOUT mutating state yet.
         3. CONFLICT RESOLUTION: E.g., if Blue drops a connection while Red exploits it, Blue wins.
@@ -109,11 +112,25 @@ class ParallelMarlCyborg(BaseMarlCyborg):
             else:
                 action = self._decode_action(agent, int(action_int))
 
+            # Validate temporal energy constraints
+            if self.global_state.agent_energy.get(agent, 0) < action.cost:
+                intended_effects[agent] = ActionEffect(
+                    success=False,
+                    state_deltas={},
+                    observation_data={'error': 'Insufficient Energy'},
+                )
+                continue
+
+            # Expend energy for the action regardless of success
+            self.global_state.agent_energy[agent] -= action.cost
+
             if action.validate(self.global_state):
                 intended_effects[agent] = action.execute(self.global_state)
             else:
                 intended_effects[agent] = ActionEffect(
-                    success=False, state_deltas={}, observation_data={}
+                    success=False,
+                    state_deltas={},
+                    observation_data={'exploit': 'validation failed natively'},
                 )
 
         resolved_effects = self._resolve_conflicts(intended_effects)
@@ -124,6 +141,11 @@ class ParallelMarlCyborg(BaseMarlCyborg):
         rewards = {}
         terminate = self.scenario.check_termination(self.global_state)
         self.current_step += 1
+
+        # Trigger dynamic topology mutations mid-episode
+        if self.current_step % 40 == 0:
+            self.global_state.reallocate_dhcp()
+
         is_truncated = self.current_step >= self.max_steps
         truncate = {agent: is_truncated for agent in self.agents}
 
@@ -185,6 +207,7 @@ class ParallelMarlCyborg(BaseMarlCyborg):
             ExploitHTTP_RFI,
             JuicyPotato,
             V4L2KernelExploit,
+            ShareIntelligence,
         )
 
         target_ips = sorted(list(self.global_state.all_hosts.keys()))
@@ -195,7 +218,7 @@ class ParallelMarlCyborg(BaseMarlCyborg):
         action_group = action_int // len(target_ips)
 
         if 'red' in agent_id.lower():
-            action_type = action_group % 11
+            action_type = action_group % 12
             if action_type == 0:
                 return NetworkScan(agent_id, '10.0.0.0/24')
             elif action_type == 1:
@@ -216,8 +239,13 @@ class ParallelMarlCyborg(BaseMarlCyborg):
                 return ExploitHTTP_RFI(agent_id, target_ip)
             elif action_type == 9:
                 return JuicyPotato(agent_id, target_ip)
-            else:
+            elif action_type == 10:
                 return V4L2KernelExploit(agent_id, target_ip)
+            else:
+                target_agent = (
+                    'red_operator' if 'commander' in agent_id else 'red_commander'
+                )
+                return ShareIntelligence(agent_id, target_agent)
         else:
             action_type = action_group % 11
             if action_type == 0:
@@ -246,8 +274,8 @@ class ParallelMarlCyborg(BaseMarlCyborg):
     def _resolve_conflicts(
         self, effects: Dict[str, ActionEffect]
     ) -> Dict[str, ActionEffect]:
-        """
-        Core physics engine.
+        """Core physics engine.
+
         Mathematically resolves simultaneous temporal collisions.
         Priority: Blue Defensive actions generally supersede Red Offensive actions
         on the exact same network node if executed in the exact same fraction of a second.
@@ -297,9 +325,10 @@ class ParallelMarlCyborg(BaseMarlCyborg):
         return effects
 
     def _apply_state_deltas(self, effects: Dict[str, ActionEffect]):
-        """
-        Applies validated deltas to the GlobalNetworkState.
-        Only called AFTER temporal collisions have been mathematically resolved.
+        """Applies validated deltas to the GlobalNetworkState.
+
+        Only called AFTER temporal collisions have been mathematically
+        resolved.
         """
         for agent_id, effect in effects.items():
             if effect.success:
@@ -307,7 +336,5 @@ class ParallelMarlCyborg(BaseMarlCyborg):
                     self.global_state.apply_delta(delta_key, delta_val)
 
     def _calculate_reward(self, agent_id: str, state) -> float:
-        """
-        Delegates reward logic directly to the localized Scenario module.
-        """
+        """Delegates reward logic directly to the localized Scenario module."""
         return self.scenario.calculate_reward(agent_id, state)

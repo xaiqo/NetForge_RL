@@ -23,6 +23,7 @@ from .red import (
     ExploitHTTP_RFI,
     JuicyPotato,
     V4L2KernelExploit,
+    ShareIntelligence,
 )
 
 __all__ = [
@@ -48,4 +49,5 @@ __all__ = [
     'ExploitHTTP_RFI',
     'JuicyPotato',
     'V4L2KernelExploit',
+    'ShareIntelligence',
 ]

@@ -2,8 +2,9 @@ from marl_cyborg.core.action import BaseAction, ActionEffect
 
 
 class Impact(BaseAction):
-    """
-    Executes the final localized objective of the Cyber Kill Chain (e.g., Ransomware/Wiper).
+    """Executes the final localized objective of the Cyber Kill Chain (e.g.,
+
+    Ransomware/Wiper).
 
     Irreversibly encrypts or destroys data on a fully compromised root host,
     triggering massive score penalties for the Blue Team.
@@ -17,8 +18,7 @@ class Impact(BaseAction):
         super().__init__(agent_id, target_ip=target_ip)
 
     def validate(self, global_state) -> bool:
-        """
-        Confirms target is accessible prior to the impact execution.
+        """Confirms target is accessible prior to the impact execution.
 
         Args:
             global_state (GlobalNetworkState): Current simulator context.
@@ -29,8 +29,9 @@ class Impact(BaseAction):
         return True
 
     def execute(self, global_state) -> ActionEffect:
-        """
-        Calculates the physics delta resulting in the total loss of system integrity.
+        """Calculates the physics delta resulting in the total loss of system
+
+        integrity.
 
         Args:
             global_state (GlobalNetworkState): Baseline network configuration.
