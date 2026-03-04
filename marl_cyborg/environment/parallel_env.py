@@ -207,6 +207,7 @@ class ParallelMarlCyborg(BaseMarlCyborg):
             ExploitHTTP_RFI,
             JuicyPotato,
             V4L2KernelExploit,
+            KillProcess,
             ShareIntelligence,
         )
 
@@ -218,7 +219,7 @@ class ParallelMarlCyborg(BaseMarlCyborg):
         action_group = action_int // len(target_ips)
 
         if 'red' in agent_id.lower():
-            action_type = action_group % 12
+            action_type = action_group % 13
             if action_type == 0:
                 return NetworkScan(agent_id, '10.0.0.0/24')
             elif action_type == 1:
@@ -241,6 +242,8 @@ class ParallelMarlCyborg(BaseMarlCyborg):
                 return JuicyPotato(agent_id, target_ip)
             elif action_type == 10:
                 return V4L2KernelExploit(agent_id, target_ip)
+            elif action_type == 11:
+                return KillProcess(agent_id, target_ip)
             else:
                 target_agent = (
                     'red_operator' if 'commander' in agent_id else 'red_commander'
