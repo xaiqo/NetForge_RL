@@ -45,6 +45,7 @@ class NetworkScan(BaseAction):
             success=True,
             state_deltas={},
             observation_data={'discovered_subnet': self.target_ip},
+            eta=3,
         )
 
 

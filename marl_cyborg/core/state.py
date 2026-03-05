@@ -27,6 +27,18 @@ class Subnet:
         self.hosts[host.ip] = host
 
 
+class Firewall:
+    def __init__(self, name: str):
+        self.name = name
+        self.rules: Dict[tuple[str, int], str] = {}
+
+    def block_port(self, target_subnet: str, port: int):
+        self.rules[(target_subnet, port)] = 'block'
+
+    def is_blocked(self, target_subnet: str, port: int) -> bool:
+        return self.rules.get((target_subnet, port)) == 'block'
+
+
 class GlobalNetworkState:
     """The Single Source of Truth for the H-MARL Physics Engine.
 
@@ -36,10 +48,15 @@ class GlobalNetworkState:
     def __init__(self):
         self.subnets: Dict[str, Subnet] = {}
         self.all_hosts: Dict[str, Host] = {}
+        self.firewalls: Dict[str, Firewall] = {}
+
         # Tracks which IPs each agent currently knows about (Fog of War)
         self.agent_knowledge: Dict[str, Set[str]] = {}
         # Tracks remaining energy/budget for temporal action constraints
         self.agent_energy: Dict[str, int] = {}
+        # Tracks asynchronous execution locks (ETA system)
+        self.agent_locked_until: Dict[str, int] = {}
+        self.pending_effects: list = []
 
     def update_knowledge(self, agent_id: str, ip: str):
         """Adds an IP address to the agent's knowledge graph."""
@@ -81,15 +98,26 @@ class GlobalNetworkState:
             ip = parts[2]
             self.update_knowledge(agent_id, ip)
 
-    def can_route_to(self, target_ip: str) -> bool:
-        """Evaluates complex network topology rules for routing
+        elif parts[0] == 'firewall' and parts[1] == 'block' and len(parts) == 4:
+            subnet = parts[2].replace('_slash_', '/')
+            port = int(parts[3])
+            if 'global' not in self.firewalls:
+                self.firewalls['global'] = Firewall('global')
+            self.firewalls['global'].block_port(subnet, port)
 
-        reachability.
+    def can_route_to(self, target_ip: str, port: int = None) -> bool:
+        """Evaluates complex network topology rules for routing
+        reachability and explicit firewall port blocks.
         """
         if target_ip not in self.all_hosts:
             return False
 
         target_subnet = self.all_hosts[target_ip].subnet_cidr
+
+        if port is not None:
+            for firewall in self.firewalls.values():
+                if firewall.is_blocked(target_subnet, port):
+                    return False
 
         if target_subnet == '192.168.1.0/24':  # DMZ
             return True

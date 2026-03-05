@@ -10,6 +10,7 @@ from .blue import (
     DecoySSHD,
     DecoyTomcat,
     Misinform,
+    ConfigureACL,
 )
 from .red import (
     NetworkScan,
@@ -39,6 +40,7 @@ __all__ = [
     'DecoySSHD',
     'DecoyTomcat',
     'Misinform',
+    'ConfigureACL',
     'NetworkScan',
     'DiscoverRemoteSystems',
     'DiscoverNetworkServices',

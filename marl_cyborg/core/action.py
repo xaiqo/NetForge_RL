@@ -16,10 +16,12 @@ class ActionEffect:
         success: bool,
         state_deltas: Dict[str, Any],
         observation_data: Dict[str, Any],
+        eta: int = 0,
     ):
         self.success = success
         self.state_deltas = state_deltas
         self.observation_data = observation_data
+        self.eta = eta
 
 
 class BaseAction(ABC):
