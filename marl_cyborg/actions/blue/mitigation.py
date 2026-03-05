@@ -177,3 +177,38 @@ class RestoreFromBackup(BaseAction):
             },
             observation_data={'alert': 'Host restored from backup image.'},
         )
+
+
+class ConfigureACL(BaseAction):
+    """
+    Dynamically modifies the implicit routing Firewall to block specific port
+    traffic inbound to a protected subnet.
+
+    Args:
+        agent_id (str): Operating Blue Agent ID.
+        target_subnet (str): The CIDR block of the subnet to protect (e.g., '10.0.1.0/24').
+        port (int): The destination port to drop (e.g., 445).
+    """
+
+    def __init__(self, agent_id: str, target_subnet: str, port: int):
+        super().__init__(agent_id, target_ip=target_subnet, cost=2)
+        self.port = port
+
+    def validate(self, global_state) -> bool:
+        """
+        Validates if the target subnet exists in the architecture.
+        """
+        return self.target_ip in global_state.subnets
+
+    def execute(self, global_state) -> ActionEffect:
+        """
+        Calculates the physics delta to apply the firewall block rule.
+        """
+        safe_subnet = self.target_ip.replace('/', '_slash_')
+        return ActionEffect(
+            success=True,
+            state_deltas={f'firewall/block/{safe_subnet}/{self.port}': 'True'},
+            observation_data={
+                'alert': f'ACL configured: Drop Port {self.port} to {self.target_ip}'
+            },
+        )

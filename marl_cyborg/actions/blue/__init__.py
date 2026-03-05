@@ -1,4 +1,10 @@
-from .mitigation import IsolateHost, RestoreHost, Remove, RestoreFromBackup
+from .mitigation import (
+    IsolateHost,
+    RestoreHost,
+    Remove,
+    RestoreFromBackup,
+    ConfigureACL,
+)
 from .analysis import Monitor, Analyze
 from .deception import DeployDecoy, DecoyApache, DecoySSHD, DecoyTomcat, Misinform
 
@@ -14,4 +20,5 @@ __all__ = [
     'DecoySSHD',
     'DecoyTomcat',
     'Misinform',
+    'ConfigureACL',
 ]

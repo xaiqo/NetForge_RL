@@ -107,6 +107,17 @@ class ParallelMarlCyborg(BaseMarlCyborg):
         """
         intended_effects = {}
         for agent, action_int in agent_actions.items():
+            # Validate temporal locks
+            if self.current_step < self.global_state.agent_locked_until.get(agent, 0):
+                intended_effects[agent] = ActionEffect(
+                    success=False,
+                    state_deltas={},
+                    observation_data={
+                        'error': 'Agent locked executing previous action'
+                    },
+                )
+                continue
+
             if isinstance(action_int, BaseAction):
                 action = action_int
             else:
@@ -125,13 +136,40 @@ class ParallelMarlCyborg(BaseMarlCyborg):
             self.global_state.agent_energy[agent] -= action.cost
 
             if action.validate(self.global_state):
-                intended_effects[agent] = action.execute(self.global_state)
+                effect = action.execute(self.global_state)
+                if getattr(effect, 'eta', 0) > 0:
+                    self.global_state.agent_locked_until[agent] = (
+                        self.current_step + effect.eta
+                    )
+                    self.global_state.pending_effects.append(
+                        (self.current_step + effect.eta, agent, effect)
+                    )
+                    intended_effects[agent] = ActionEffect(
+                        success=False,
+                        state_deltas={},
+                        observation_data={
+                            'status': f'Executing action... ETA {effect.eta} steps'
+                        },
+                    )
+                else:
+                    intended_effects[agent] = effect
             else:
                 intended_effects[agent] = ActionEffect(
                     success=False,
                     state_deltas={},
                     observation_data={'exploit': 'validation failed natively'},
                 )
+
+        # Process delayed effects that have arrived natively
+        remaining_pending = []
+        for eta_step, p_agent, p_effect in self.global_state.pending_effects:
+            if self.current_step >= eta_step:
+                intended_effects[p_agent] = (
+                    p_effect  # Overlay onto their intended effect
+                )
+            else:
+                remaining_pending.append((eta_step, p_agent, p_effect))
+        self.global_state.pending_effects = remaining_pending
 
         resolved_effects = self._resolve_conflicts(intended_effects)
 
@@ -209,6 +247,7 @@ class ParallelMarlCyborg(BaseMarlCyborg):
             V4L2KernelExploit,
             KillProcess,
             ShareIntelligence,
+            ConfigureACL,
         )
 
         target_ips = sorted(list(self.global_state.all_hosts.keys()))
@@ -250,7 +289,7 @@ class ParallelMarlCyborg(BaseMarlCyborg):
                 )
                 return ShareIntelligence(agent_id, target_agent)
         else:
-            action_type = action_group % 11
+            action_type = action_group % 12
             if action_type == 0:
                 return IsolateHost(agent_id, target_ip)
             elif action_type == 1:
@@ -271,8 +310,11 @@ class ParallelMarlCyborg(BaseMarlCyborg):
                 return DecoySSHD(agent_id, target_ip)
             elif action_type == 9:
                 return DecoyTomcat(agent_id, target_ip)
-            else:
+            elif action_type == 10:
                 return Misinform(agent_id, target_ip)
+            else:
+                subnet = '.'.join(target_ip.split('.')[:3]) + '.0/24'
+                return ConfigureACL(agent_id, target_subnet=subnet, port=445)
 
     def _resolve_conflicts(
         self, effects: Dict[str, ActionEffect]
