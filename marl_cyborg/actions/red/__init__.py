@@ -6,7 +6,7 @@ from .exploits import (
     ExploitHTTP_RFI,
 )
 from .privilege_escalation import PrivilegeEscalate, JuicyPotato, V4L2KernelExploit
-from .impact import Impact
+from .impact import Impact, KillProcess
 from .coordination import ShareIntelligence
 
 __all__ = [
@@ -21,5 +21,6 @@ __all__ = [
     'JuicyPotato',
     'V4L2KernelExploit',
     'Impact',
+    'KillProcess',
     'ShareIntelligence',
 ]

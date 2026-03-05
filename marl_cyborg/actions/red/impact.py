@@ -44,3 +44,36 @@ class Impact(BaseAction):
             state_deltas={f'hosts/{self.target_ip}/system_integrity': 'compromised'},
             observation_data={'impact': 'executed'},
         )
+
+
+class KillProcess(BaseAction):
+    """
+    Terminates a specific process (e.g., EDR sensor) on a compromised host.
+
+    This blinds the Blue Team from telemetry on this specific node, allowing Red
+    to conduct noisy actions without triggering Monitor loops.
+
+    Args:
+        agent_id (str): The executing red operator.
+        target_ip (str): IP address of the target host.
+    """
+
+    def __init__(self, agent_id: str, target_ip: str):
+        super().__init__(agent_id, target_ip=target_ip, cost=1)
+
+    def validate(self, global_state) -> bool:
+        """
+        Validates target reachability. Usually requires the host to be directly routable
+        or already compromised in practice.
+        """
+        return global_state.can_route_to(self.target_ip)
+
+    def execute(self, global_state) -> ActionEffect:
+        """
+        Calculates the delta to disable the EDR active status.
+        """
+        return ActionEffect(
+            success=True,
+            state_deltas={f'hosts/{self.target_ip}/edr_active': False},
+            observation_data={'kill_process': 'EDR blinded'},
+        )

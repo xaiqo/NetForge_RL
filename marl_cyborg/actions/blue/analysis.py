@@ -53,8 +53,9 @@ class Monitor(BaseAction):
 
         if target_subnet_cidr and target_subnet_cidr in global_state.subnets:
             subnet_hosts = global_state.subnets[target_subnet_cidr].hosts
-            for ip in subnet_hosts.keys():
-                knowledge_deltas[f'knowledge/{self.agent_id}/{ip}'] = 'True'
+            for ip, host in subnet_hosts.items():
+                if host.edr_active:
+                    knowledge_deltas[f'knowledge/{self.agent_id}/{ip}'] = 'True'
 
         return ActionEffect(
             success=True,
@@ -106,6 +107,14 @@ class Analyze(BaseAction):
 
         if self.target_ip in global_state.all_hosts:
             host = global_state.all_hosts[self.target_ip]
+
+            if not host.edr_active:
+                return ActionEffect(
+                    success=False,
+                    state_deltas={},
+                    observation_data={'error': 'EDR blindspot - telemetry unavailable'},
+                )
+
             if host.privilege in ['User', 'Root']:
                 obs_data['ioc_found'] = True
                 obs_data['compromised_by'] = host.compromised_by
