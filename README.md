@@ -1,9 +1,9 @@
-# MARL CybORG (v3.0.0)
+# NetForge RL
 
 Multi-Agent Reinforcement Learning (MARL) cybersecurity simulator mathematically derived from the original [CybORG / CAGE challenge environment](https://github.com/CyberSecurityCRC/CybORG). 
 
 **Author / Maintainer:** Igor Jankowski (igorjankowwski@gmail.com)  
-**Project:** MARL Cyborg
+**Project:** NetForge RL
 **GNN-based Policy Model:** https://github.com/elprofesoriqo/GNN-based-Policy-Model-for-MARL-Cyber
 
 ## Architectural Overhaul Notice
@@ -19,7 +19,7 @@ This repository represents a complete structural redesign of the original CybORG
 
 ```mermaid
 graph TD
-    A[PettingZoo ParallelEnv] -->|RL Agent Actions| B(marl_cyborg Action Decoder)
+    A[PettingZoo ParallelEnv] -->|RL Agent Actions| B(NetForge RL Action Decoder)
     B --> C{BaseAction Subclasses}
     C -->|Red Intent| D[Red Modular Actions]
     C -->|Blue Intent| E[Blue Modular Actions]
