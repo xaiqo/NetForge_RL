@@ -15,8 +15,12 @@ class Host:
         self.services: list = []  # Running services (SSH, SMB, etc.)
         self.vulnerabilities: list = []  # CVEs present on this host
         self.is_domain_controller: bool = False  # Allows Pass-the-Hash if Rooted
-        self.human_vulnerability_score: float = 0.5  # Phishability indicator (0.0 to 1.0)
-        self.contains_honeytokens: bool = False  # Triggers 100% confidence active deception traps
+        self.human_vulnerability_score: float = (
+            0.5  # Phishability indicator (0.0 to 1.0)
+        )
+        self.contains_honeytokens: bool = (
+            False  # Triggers 100% confidence active deception traps
+        )
 
     def __repr__(self):
         return (
@@ -65,7 +69,7 @@ class GlobalNetworkState:
         self.agent_funds: Dict[str, int] = {}
         self.agent_compute: Dict[str, int] = {}
         self.business_downtime_score: float = 0.0
-        
+
         # Tracks asynchronous execution locks (ETA system)
         self.agent_locked_until: Dict[str, int] = {}
         self.action_history: Dict[str, set] = {}
@@ -95,8 +99,8 @@ class GlobalNetworkState:
 
     def apply_delta(self, delta_key: Any, delta_value: Any = None):
         """Dynamically mutates the network graph.
-        
-        Now supports standard OOP `IStateDeltaCommand` objects executing their 
+
+        Now supports standard OOP `IStateDeltaCommand` objects executing their
         own state mutations, while retaining legacy string-path parsing for compatibility.
         """
         # Command Pattern Standard Execution
@@ -107,6 +111,7 @@ class GlobalNetworkState:
         # Legacy String parsing (Deprecation Path)
         if not isinstance(delta_key, str):
             from netforge_rl.core.commands import IStateDeltaCommand
+
             if isinstance(delta_key, IStateDeltaCommand):
                 delta_key.execute(self)
             return

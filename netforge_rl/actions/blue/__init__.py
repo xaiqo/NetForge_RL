@@ -7,7 +7,14 @@ from .mitigation import (
     SecurityAwarenessTraining,
 )
 from .analysis import Monitor, Analyze
-from .deception import DeployDecoy, DecoyApache, DecoySSHD, DecoyTomcat, Misinform, DeployHoneytoken
+from .deception import (
+    DeployDecoy,
+    DecoyApache,
+    DecoySSHD,
+    DecoyTomcat,
+    Misinform,
+    DeployHoneytoken,
+)
 
 __all__ = [
     'IsolateHost',

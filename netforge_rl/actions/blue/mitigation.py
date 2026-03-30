@@ -1,7 +1,10 @@
 from netforge_rl.core.action import BaseAction, ActionEffect
 from netforge_rl.core.registry import action_registry
-from netforge_rl.core.commands import UpdateHostStatusCommand, DropSessionCommand, BlockPortCommand
-
+from netforge_rl.core.commands import (
+    UpdateHostStatusCommand,
+    DropSessionCommand,
+    BlockPortCommand,
+)
 
 
 @action_registry.register('blue_operator', 0)
@@ -47,7 +50,7 @@ class IsolateHost(BaseAction):
             success=True,
             state_deltas=[
                 UpdateHostStatusCommand(self.target_ip, 'isolated'),
-                DropSessionCommand(self.target_ip)
+                DropSessionCommand(self.target_ip),
             ],
             observation_data={'alert': 'Host isolated securely.'},
         )
@@ -224,19 +227,18 @@ class ConfigureACL(BaseAction):
         """
         return ActionEffect(
             success=True,
-            state_deltas=[
-                BlockPortCommand(self.target_ip, self.port)
-            ],
+            state_deltas=[BlockPortCommand(self.target_ip, self.port)],
             observation_data={
                 'alert': f'ACL configured: Drop Port {self.port} to {self.target_ip}'
             },
         )
 
+
 @action_registry.register('blue_operator', 7)
 class SecurityAwarenessTraining(BaseAction):
     """
     Deploys rapid, intensive anti-phishing training to a targeted subnet.
-    
+
     Temporarily slashes the `human_vulnerability_score` of all users in the subset,
     drastically lowering the success rate of Red Team SpearPhishing campaigns.
     Costs significant Financial budget due to operational lost time.
@@ -244,11 +246,7 @@ class SecurityAwarenessTraining(BaseAction):
 
     def __init__(self, agent_id: str, target_subnet: str):
         super().__init__(
-            agent_id, 
-            target_ip=target_subnet, 
-            cost=2, 
-            financial_cost=2000, 
-            duration=3
+            agent_id, target_ip=target_subnet, cost=2, financial_cost=2000, duration=3
         )
 
     def validate(self, global_state) -> bool:
@@ -270,6 +268,8 @@ class SecurityAwarenessTraining(BaseAction):
         return ActionEffect(
             success=True,
             state_deltas=deltas,
-            observation_data={'alert': f'Security Awareness Training completed on {self.target_ip}. Vulnerability drastically lowered.'},
-            eta=self.duration
+            observation_data={
+                'alert': f'Security Awareness Training completed on {self.target_ip}. Vulnerability drastically lowered.'
+            },
+            eta=self.duration,
         )

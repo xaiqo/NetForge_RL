@@ -22,7 +22,7 @@ class BaseObservation:
 
         # Tracks anomalies like 802.11 Deauths, Fragmented IP packets, etc.
         self.network_telemetry = {}
-        
+
         # SIEM Logs
         self.siem_alerts = []
 
@@ -43,9 +43,9 @@ class BaseObservation:
             for ip in known_ips:
                 if ip in global_state.all_hosts:
                     host = global_state.all_hosts[ip]
-                    
+
                     if 'blue' in self.agent_id.lower():
-                        # Strict POMDP: Blue cannot see physical truth vectors. 
+                        # Strict POMDP: Blue cannot see physical truth vectors.
                         # They must rely on SIEM telemetry alone for detection.
                         self.visible_hosts[ip] = {
                             'state': 'unknown',
@@ -55,7 +55,9 @@ class BaseObservation:
                     else:
                         # Red Team directly monitors nodes they root.
                         self.visible_hosts[ip] = {
-                            'state': 'compromised' if host.privilege in ['User', 'Root'] else 'clean',
+                            'state': 'compromised'
+                            if host.privilege in ['User', 'Root']
+                            else 'clean',
                             'status': host.status,
                             'decoy': 'unknown',
                         }
@@ -64,7 +66,9 @@ class BaseObservation:
             # Pull SIEM logs that have arrived (arrival_tick <= current_tick)
             if hasattr(global_state, 'siem_log_buffer'):
                 for log in global_state.siem_log_buffer:
-                    if log.get('arrival_tick', 0) <= getattr(global_state, 'current_tick', 0):
+                    if log.get('arrival_tick', 0) <= getattr(
+                        global_state, 'current_tick', 0
+                    ):
                         self.siem_alerts.append(log)
 
             self.network_telemetry['global_alert_level'] = np.random.uniform(0, 1)
@@ -96,7 +100,9 @@ class BaseObservation:
             idx += 1
 
         if 'active_alerts' in self.network_telemetry and idx < max_size:
-            vector[idx] = float(min(self.network_telemetry['active_alerts'] / 20.0, 1.0))
+            vector[idx] = float(
+                min(self.network_telemetry['active_alerts'] / 20.0, 1.0)
+            )
             idx += 1
 
         for val in self.objective_vector:

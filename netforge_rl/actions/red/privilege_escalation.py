@@ -2,7 +2,6 @@ from netforge_rl.core.action import BaseAction, ActionEffect
 from netforge_rl.core.registry import action_registry
 
 
-
 @action_registry.register('red_operator', 1)
 class PrivilegeEscalate(BaseAction):
     """Executes a generic local privilege escalation exploit on a compromised
@@ -165,7 +164,7 @@ class V4L2KernelExploit(BaseAction):
 
 @action_registry.register('red_operator', 9)
 class PassTheHash(BaseAction):
-    """Executes a lateral movement attack bypassing authentication using 
+    """Executes a lateral movement attack bypassing authentication using
     Kerberos / NTLM hashes extracted from a Domain Controller.
 
     Args:
@@ -184,10 +183,10 @@ class PassTheHash(BaseAction):
                 if host.compromised_by == self.agent_id:
                     has_dc_hash = True
                     break
-        
+
         if not has_dc_hash:
             return False
-            
+
         return global_state.can_route_to(self.target_ip)
 
     def execute(self, global_state) -> ActionEffect:
@@ -199,7 +198,9 @@ class PassTheHash(BaseAction):
         from netforge_rl.core.commands import UpdateHostPrivilegeCommand
 
         deltas = [
-            UpdateHostPrivilegeCommand(self.target_ip, 'Root', compromised_by=self.agent_id)
+            UpdateHostPrivilegeCommand(
+                self.target_ip, 'Root', compromised_by=self.agent_id
+            )
         ]
 
         return ActionEffect(

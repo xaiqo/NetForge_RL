@@ -2,7 +2,6 @@ from netforge_rl.core.action import BaseAction, ActionEffect
 from netforge_rl.core.registry import action_registry
 
 
-
 @action_registry.register('blue_operator', 2)
 class Monitor(BaseAction):
     """Deploys active traffic analysis scanning on a specific subnet or host.

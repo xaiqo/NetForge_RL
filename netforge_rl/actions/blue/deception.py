@@ -2,7 +2,6 @@ from netforge_rl.core.action import BaseAction, ActionEffect
 from netforge_rl.core.registry import action_registry
 
 
-
 @action_registry.register('blue_commander', 0)
 class DeployDecoy(BaseAction):
     """Deploys a generic high-interaction honeypot/decoy service to a target
@@ -210,24 +209,21 @@ class Misinform(BaseAction):
             },
         )
 
+
 @action_registry.register('blue_commander', 5)
 class DeployHoneytoken(BaseAction):
     """
     Injects fake, highly-monitored credentials into the memory space of a real host.
 
-    If a Red agent successfully compromises this host and attempts to perform 
-    post-exploitation (e.g., Pass-the-Hash, credential dumping), they ingest the 
-    Honeytoken instead. This triggers an immediate, 100% confidence SIEM Alert 
+    If a Red agent successfully compromises this host and attempts to perform
+    post-exploitation (e.g., Pass-the-Hash, credential dumping), they ingest the
+    Honeytoken instead. This triggers an immediate, 100% confidence SIEM Alert
     exposing the Red agent's exact location natively.
     """
 
     def __init__(self, agent_id: str, target_ip: str):
         super().__init__(
-            agent_id, 
-            target_ip=target_ip, 
-            cost=5, 
-            financial_cost=50, 
-            duration=1
+            agent_id, target_ip=target_ip, cost=5, financial_cost=50, duration=1
         )
 
     def validate(self, global_state) -> bool:
@@ -237,6 +233,8 @@ class DeployHoneytoken(BaseAction):
         return ActionEffect(
             success=True,
             state_deltas={f'hosts/{self.target_ip}/contains_honeytokens': True},
-            observation_data={'alert': f'Honeytokens actively deployed in RAM on {self.target_ip}.'},
-            eta=self.duration
+            observation_data={
+                'alert': f'Honeytokens actively deployed in RAM on {self.target_ip}.'
+            },
+            eta=self.duration,
         )

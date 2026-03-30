@@ -6,7 +6,7 @@ class ConflictResolutionEngine:
     """Strategy pattern engine defining the physical constraints of action collisions.
     Mathematically resolves simultaneous temporal collisions.
     """
-    
+
     @staticmethod
     def resolve(effects: Dict[str, ActionEffect]) -> Dict[str, ActionEffect]:
         """Core physics engine.
@@ -39,7 +39,7 @@ class ConflictResolutionEngine:
                 continue
 
             collision_detected = False
-            
+
             # Check dictionary deltas
             if isinstance(red_eff.state_deltas, dict):
                 for delta_key in list(red_eff.state_deltas.keys()):
@@ -58,7 +58,11 @@ class ConflictResolutionEngine:
             if collision_detected:
                 # Nullify Red's attack effect entirely and alert the network telemetry
                 effects[red_id].success = False
-                effects[red_id].state_deltas = [] if isinstance(red_eff.state_deltas, list) else {}
-                effects[red_id].observation_data['alert'] = 'TEMPORAL_COLLISION_DEFENSE_SUPREMACY'
+                effects[red_id].state_deltas = (
+                    [] if isinstance(red_eff.state_deltas, list) else {}
+                )
+                effects[red_id].observation_data['alert'] = (
+                    'TEMPORAL_COLLISION_DEFENSE_SUPREMACY'
+                )
 
         return effects

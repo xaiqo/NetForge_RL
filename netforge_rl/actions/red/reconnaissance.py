@@ -2,7 +2,6 @@ from netforge_rl.core.action import BaseAction, ActionEffect
 from netforge_rl.core.registry import action_registry
 
 
-
 @action_registry.register('red_commander', 0)
 class NetworkScan(BaseAction):
     """Executes a wide network scan across a specified subnet to map active IP
@@ -169,7 +168,7 @@ class DiscoverNetworkServices(BaseAction):
         # Update knowledge that we scanned this host and add to history
         knowledge_deltas = {
             f'knowledge/{self.agent_id}/{self.target_ip}': 'True',
-            f'history/{self.agent_id}/DiscoverNetworkServices:{self.target_ip}': 'add'
+            f'history/{self.agent_id}/DiscoverNetworkServices:{self.target_ip}': 'add',
         }
 
         return ActionEffect(

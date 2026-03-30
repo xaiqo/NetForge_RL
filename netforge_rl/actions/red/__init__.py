@@ -29,4 +29,3 @@ __all__ = [
 ]
 
 from .social_engineering import SpearPhishing
-

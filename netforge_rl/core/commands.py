@@ -6,6 +6,7 @@ class IStateDeltaCommand(ABC):
     """Abstract Command interface for Object-Oriented state mutation.
     Allows for decoupled physics application dynamically processed by the Resolve engine.
     """
+
     @abstractmethod
     def execute(self, global_state: Any):
         pass
@@ -95,6 +96,7 @@ class BlockPortCommand(IStateDeltaCommand):
         if 'global' not in global_state.firewalls:
             # We import here to avoid circular dependencies if needed depending on global state structure
             from netforge_rl.core.state import Firewall
+
             global_state.firewalls['global'] = Firewall('global')
         global_state.firewalls['global'].block_port(self.subnet, self.port)
 
@@ -141,7 +143,9 @@ class EstablishSessionCommand(IStateDeltaCommand):
     def execute(self, global_state: Any):
         if self.agent_id not in global_state.active_sessions:
             global_state.active_sessions[self.agent_id] = []
-        global_state.active_sessions[self.agent_id].append({'ip': self._target_ip, 'port': self.port})
+        global_state.active_sessions[self.agent_id].append(
+            {'ip': self._target_ip, 'port': self.port}
+        )
 
 
 class DropSessionCommand(IStateDeltaCommand):
@@ -154,7 +158,9 @@ class DropSessionCommand(IStateDeltaCommand):
 
     def execute(self, global_state: Any):
         for agent_id, sessions in global_state.active_sessions.items():
-            global_state.active_sessions[agent_id] = [s for s in sessions if s['ip'] != self._target_ip]
+            global_state.active_sessions[agent_id] = [
+                s for s in sessions if s['ip'] != self._target_ip
+            ]
 
 
 class ConsumeBandwidthCommand(IStateDeltaCommand):
@@ -169,12 +175,16 @@ class ConsumeBandwidthCommand(IStateDeltaCommand):
     def execute(self, global_state: Any):
         if self.subnet not in global_state.subnet_bandwidth:
             global_state.subnet_bandwidth[self.subnet] = 0
-            
+
         global_state.subnet_bandwidth[self.subnet] += self.amount
-        
+
         # Volumetric SIEM Trigger Rule
         # If any subnet spikes above 1000 units in a single tick, generate a SIEM log.
         if global_state.subnet_bandwidth[self.subnet] > 1000:
-            volumetric_alert = {'type': 'volumetric_anomaly', 'subnet': self.subnet, 'severity': 'High'}
+            volumetric_alert = {
+                'type': 'volumetric_anomaly',
+                'subnet': self.subnet,
+                'severity': 'High',
+            }
             if volumetric_alert not in global_state.siem_log_buffer:
                 global_state.siem_log_buffer.append(volumetric_alert)

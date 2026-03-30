@@ -61,7 +61,7 @@ class BaseAction(ABC):
         if self.required_prior_state:
             # Check Action History state logic
             agent_history = global_state.action_history.get(self.agent_id, set())
-            expected_record = f"{self.required_prior_state}:{self.target_ip}"
+            expected_record = f'{self.required_prior_state}:{self.target_ip}'
             if expected_record not in agent_history:
                 return False
 
@@ -70,8 +70,16 @@ class BaseAction(ABC):
             # Simple declarative Zone constraints example
             if 'red' in self.agent_id.lower() and host.subnet_cidr == '10.0.1.0/24':
                 # Secure Data targets cannot be touched without pivoting via DMZ or Internal User privileges first
-                has_dmz = any(h.privilege in ['User', 'Root'] for h in global_state.all_hosts.values() if h.subnet_cidr == '192.168.1.0/24')
-                has_internal = any(h.privilege in ['User', 'Root'] for h in global_state.all_hosts.values() if h.subnet_cidr == '10.0.0.0/24')
+                has_dmz = any(
+                    h.privilege in ['User', 'Root']
+                    for h in global_state.all_hosts.values()
+                    if h.subnet_cidr == '192.168.1.0/24'
+                )
+                has_internal = any(
+                    h.privilege in ['User', 'Root']
+                    for h in global_state.all_hosts.values()
+                    if h.subnet_cidr == '10.0.0.0/24'
+                )
                 if not (has_dmz or has_internal):
                     return False
 

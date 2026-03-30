@@ -9,7 +9,7 @@ class GreenAgent:
     It operates on a Day/Night cycle across the simulated business hours.
     """
 
-    def __init__(self, agent_id: str = "green_agent_0"):
+    def __init__(self, agent_id: str = 'green_agent_0'):
         self.agent_id = agent_id
 
     def generate_noise(self, current_tick: int, global_state: Any) -> Dict[str, Any]:
@@ -41,24 +41,34 @@ class GreenAgent:
             source = random.choice(hosts)
             target = random.choice(hosts)
             if source.ip != target.ip:
-                noise_logs.append({
-                    'type': 'benign_traffic',
-                    'source': source.ip,
-                    'target': target.ip,
-                    'protocol': random.choice(['TCP', 'UDP', 'HTTP', 'DNS']),
-                    'severity': 0
-                })
+                noise_logs.append(
+                    {
+                        'type': 'benign_traffic',
+                        'source': source.ip,
+                        'target': target.ip,
+                        'protocol': random.choice(['TCP', 'UDP', 'HTTP', 'DNS']),
+                        'severity': 0,
+                    }
+                )
 
         if random.random() < probability_of_false_positive:
             # Generate a false positive anomaly that could trip Blue's SIEM
             target = random.choice(hosts)
-            noise_logs.append({
-                'type': 'anomaly',
-                'source': 'unknown_external',
-                'target': target.ip,
-                'signature': random.choice(['Failed_Login_Spike', 'Malformed_Packet', 'Suspicious_User_Agent']),
-                'severity': random.randint(1, 4),
-                'false_positive': True
-            })
+            noise_logs.append(
+                {
+                    'type': 'anomaly',
+                    'source': 'unknown_external',
+                    'target': target.ip,
+                    'signature': random.choice(
+                        [
+                            'Failed_Login_Spike',
+                            'Malformed_Packet',
+                            'Suspicious_User_Agent',
+                        ]
+                    ),
+                    'severity': random.randint(1, 4),
+                    'false_positive': True,
+                }
+            )
 
         return {'alerts': noise_logs}

@@ -32,7 +32,9 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
             if scenario_config
             else 'ransomware'
         )
-        self.log_latency = scenario_config.get('log_latency', 2) if scenario_config else 2
+        self.log_latency = (
+            scenario_config.get('log_latency', 2) if scenario_config else 2
+        )
         self.green_agent = GreenAgent()
         self.possible_agents = [
             'red_commander',
@@ -56,14 +58,22 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
 
         # Native Gymnasium Spaces for PettingZoo API + RLlib Mapping
         self.observation_spaces = {
-            agent: gym.spaces.Dict({
-                "obs": gym.spaces.Box(low=-1.0, high=1.0, shape=(256,), dtype=np.float32),
-                "action_mask": gym.spaces.Box(low=0, high=1, shape=(62,), dtype=np.int8)  # 12 action types + 50 IPs
-            })
+            agent: gym.spaces.Dict(
+                {
+                    'obs': gym.spaces.Box(
+                        low=-1.0, high=1.0, shape=(256,), dtype=np.float32
+                    ),
+                    'action_mask': gym.spaces.Box(
+                        low=0, high=1, shape=(62,), dtype=np.int8
+                    ),  # 12 action types + 50 IPs
+                }
+            )
             for agent in self.possible_agents
         }
         self.action_spaces = {
-            agent: gym.spaces.MultiDiscrete([12, 50])  # [Action Type (max 12), Target IP Index (max 50 padded)]
+            agent: gym.spaces.MultiDiscrete(
+                [12, 50]
+            )  # [Action Type (max 12), Target IP Index (max 50 padded)]
             for agent in self.possible_agents
         }
         self.max_ticks = 1000
@@ -80,7 +90,9 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         self.global_state = self.network_generator.generate(seed=seed)
         self.agents = self.possible_agents[:]
         self.global_state.agent_energy = {agent: 50 for agent in self.agents}
-        self.global_state.agent_funds = {agent: 10000 if 'blue' in agent else 5000 for agent in self.agents}
+        self.global_state.agent_funds = {
+            agent: 10000 if 'blue' in agent else 5000 for agent in self.agents
+        }
         self.global_state.agent_compute = {agent: 1000 for agent in self.agents}
         self.global_state.business_downtime_score = 0.0
         observations = {}
@@ -88,8 +100,8 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
             obs = BaseObservation(agent_id)
             obs.update_from_state(self.global_state, [])
             observations[agent_id] = {
-                "obs": obs.to_numpy(max_size=256),
-                "action_mask": self.action_mask(agent_id)
+                'obs': obs.to_numpy(max_size=256),
+                'action_mask': self.action_mask(agent_id),
             }
         self.current_tick = 0
         self.event_queue = []
@@ -116,12 +128,12 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         else:
             valid_action_types = 5 if 'commander' in agent.lower() else 7
         mask[:valid_action_types] = 1
-        
+
         # 2. Target IP Dimension (12-61)
         target_ips = sorted(list(self.global_state.all_hosts.keys()))
         num_targets = min(len(target_ips), 50)
-        mask[12:12 + num_targets] = 1
-        
+        mask[12 : 12 + num_targets] = 1
+
         return mask
 
     def step(
@@ -158,7 +170,9 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                 action = action_int
             else:
                 target_ips = sorted(list(self.global_state.all_hosts.keys()))
-                action = action_registry.instantiate_action(agent, action_int, target_ips)
+                action = action_registry.instantiate_action(
+                    agent, action_int, target_ips
+                )
                 if action is None:
                     continue  # Invalid action/unmapped action bounds
 
@@ -181,27 +195,37 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
 
                 # Generate intended effect (though state might shift by completion time)
                 effect = action.execute(self.global_state)
-                
+
                 self.global_state.agent_locked_until[agent] = completion_tick
-                self.event_queue.append({
-                    'completion_tick': completion_tick,
-                    'agent': agent,
-                    'action': action,
-                    'effect': effect,
-                    'target_ip': getattr(action, 'target_ip', None)
-                })
+                self.event_queue.append(
+                    {
+                        'completion_tick': completion_tick,
+                        'agent': agent,
+                        'action': action,
+                        'effect': effect,
+                        'target_ip': getattr(action, 'target_ip', None),
+                    }
+                )
 
         # 2. INTERRUPTION LOGIC (e.g., IsolateHost Immediately Cancels Ongoing Attacks)
         for event in list(self.event_queue):
-            if type(event['action']).__name__ == "IsolateHost" and event['completion_tick'] > self.current_tick:
+            if (
+                type(event['action']).__name__ == 'IsolateHost'
+                and event['completion_tick'] > self.current_tick
+            ):
                 # Isolate is queued or starting now; interrupt Red
                 target_to_isolate = event['target_ip']
                 for red_event in list(self.event_queue):
-                    if 'red' in red_event['agent'].lower() and red_event['target_ip'] == target_to_isolate:
+                    if (
+                        'red' in red_event['agent'].lower()
+                        and red_event['target_ip'] == target_to_isolate
+                    ):
                         if red_event in self.event_queue:
                             self.event_queue.remove(red_event)
                         # Unlock Red agent since their attack was disrupted
-                        self.global_state.agent_locked_until[red_event['agent']] = self.current_tick
+                        self.global_state.agent_locked_until[red_event['agent']] = (
+                            self.current_tick
+                        )
 
         # 3. ADVANCE TIME
         self.current_tick += 1
@@ -209,7 +233,9 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         self.global_state.subnet_bandwidth.clear()
 
         # GENERATE BACKGROUND NOISE & DELAYED ALERTS
-        noise_data = self.green_agent.generate_noise(self.current_tick, self.global_state)
+        noise_data = self.green_agent.generate_noise(
+            self.current_tick, self.global_state
+        )
         for anomaly in noise_data.get('alerts', []):
             anomaly['arrival_tick'] = self.current_tick + self.log_latency
             self.global_state.siem_log_buffer.append(anomaly)
@@ -231,24 +257,30 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         for res_agent, res_effect in resolved_effects.items():
             if 'red' in res_agent and res_effect.success:
                 target_ip = res_effect.observation_data.get('exploit', 'unknown')
-                
+
                 # Active Deception intercept
                 host = self.global_state.all_hosts.get(target_ip)
                 is_honeytoken_trap = host and host.contains_honeytokens
 
-                signature = 'HONEYTOKEN_TRIGGERED' if is_honeytoken_trap else 'RED_ACTION_DETECTED'
+                signature = (
+                    'HONEYTOKEN_TRIGGERED'
+                    if is_honeytoken_trap
+                    else 'RED_ACTION_DETECTED'
+                )
                 severity = 10 if is_honeytoken_trap else 5
                 log_delay = 0 if is_honeytoken_trap else self.log_latency
 
-                self.global_state.siem_log_buffer.append({
-                    'type': 'anomaly',
-                    'source': res_agent,
-                    'target': target_ip,
-                    'signature': signature,
-                    'severity': severity,
-                    'false_positive': False,
-                    'arrival_tick': self.current_tick + log_delay
-                })
+                self.global_state.siem_log_buffer.append(
+                    {
+                        'type': 'anomaly',
+                        'source': res_agent,
+                        'target': target_ip,
+                        'signature': signature,
+                        'severity': severity,
+                        'false_positive': False,
+                        'arrival_tick': self.current_tick + log_delay,
+                    }
+                )
 
         observations = {}
         rewards = {}
@@ -273,14 +305,15 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                     # Normalize the MultiDiscrete action to a float between 0.0 and 1.0
                     cmd_val = (
                         (float(cmd_action[0]) / 12.0)
-                        if getattr(cmd_action, '__iter__', False) and not isinstance(cmd_action, BaseAction)
+                        if getattr(cmd_action, '__iter__', False)
+                        and not isinstance(cmd_action, BaseAction)
                         else 1.0
                     )
                     obs_array[0] = cmd_val
 
             observations[agent] = {
-                "obs": obs_array,
-                "action_mask": self.action_mask(agent)
+                'obs': obs_array,
+                'action_mask': self.action_mask(agent),
             }
             # Reward shaping applied here natively factoring in immediate action outcomes
             agent_effect = resolved_effects.get(agent)

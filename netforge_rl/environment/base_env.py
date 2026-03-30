@@ -43,4 +43,3 @@ class BaseNetForgeRLEnv(ParallelEnv, abc.ABC):
         Must strictly return: (observations, rewards, terminations, truncations, infos)
         """
         pass
-

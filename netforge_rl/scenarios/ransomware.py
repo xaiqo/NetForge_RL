@@ -73,7 +73,10 @@ class RansomwareScenario(BaseScenario):
                     reward += 2.0
 
                 # OT / SCADA Catastrophic Win
-                elif 'system_integrity' in delta_key and delta_val == 'kinetic_destruction':
+                elif (
+                    'system_integrity' in delta_key
+                    and delta_val == 'kinetic_destruction'
+                ):
                     reward += 10000.0
 
         # ── Observation-based rewards ─────────────────────────
@@ -140,7 +143,10 @@ class RansomwareScenario(BaseScenario):
                     reward += 1.0  # Proactive defense
 
                 # Failed to prevent Kinetic Destruction of SCADA framework
-                elif 'system_integrity' in delta_key and delta_val == 'kinetic_destruction':
+                elif (
+                    'system_integrity' in delta_key
+                    and delta_val == 'kinetic_destruction'
+                ):
                     reward -= 10000.0
 
         # ── Per-step network health (small, bounded) ──────────
@@ -165,7 +171,8 @@ class RansomwareScenario(BaseScenario):
 
         # ── Business Downtime Penalty (Economics) ─────────────
         total_isolated = sum(
-            1 for h in global_state.all_hosts.values()
+            1
+            for h in global_state.all_hosts.values()
             if h.status == 'isolated' and h.subnet_cidr != '169.254.0.0/16'
         )
         if total_isolated > 0:
@@ -196,7 +203,10 @@ class RansomwareScenario(BaseScenario):
             return {agent: True for agent in self.agents}
 
         # Terminal Fail-State for Blue: A PLC has been physically destroyed
-        if any(getattr(h, 'system_integrity', 'clean') == 'kinetic_destruction' for h in global_state.all_hosts.values()):
+        if any(
+            getattr(h, 'system_integrity', 'clean') == 'kinetic_destruction'
+            for h in global_state.all_hosts.values()
+        ):
             return {agent: True for agent in self.agents}
 
         return terminate

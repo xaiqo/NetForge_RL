@@ -2,7 +2,6 @@ from netforge_rl.core.action import BaseAction, ActionEffect
 from netforge_rl.core.registry import action_registry
 
 
-
 @action_registry.register('red_operator', 2)
 class Impact(BaseAction):
     """Executes the final localized objective of the Cyber Kill Chain (e.g.,
@@ -86,8 +85,8 @@ class KillProcess(BaseAction):
 @action_registry.register('red_operator', 10)
 class ExfiltrateData(BaseAction):
     """Exfiltrates sensitive data out of a compromised node.
-    
-    Generates enormous network traffic traversing the egress point. 
+
+    Generates enormous network traffic traversing the egress point.
     Susceptible to Volumetric SIEM detection based on dynamic SNR thresholds.
     """
 
@@ -102,16 +101,14 @@ class ExfiltrateData(BaseAction):
 
     def execute(self, global_state) -> ActionEffect:
         from netforge_rl.core.commands import ConsumeBandwidthCommand
-        
+
         host = global_state.all_hosts.get(self.target_ip)
         target_subnet = host.subnet_cidr if host else 'unknown'
-        
-        deltas = [
-            ConsumeBandwidthCommand(target_subnet, amount=500)
-        ]
-        
+
+        deltas = [ConsumeBandwidthCommand(target_subnet, amount=500)]
+
         return ActionEffect(
             success=True,
             state_deltas=deltas,
-            observation_data={'action': 'exfiltrated_data_chunk'}
+            observation_data={'action': 'exfiltrated_data_chunk'},
         )
