@@ -56,8 +56,11 @@ __all__ = [
     'KillProcess',
     'ShareIntelligence',
     'OverloadPLC',
+    'SecurityAwarenessTraining',
+    'DeployHoneytoken',
 ]
 
 from .blue import SecurityAwarenessTraining
-
 from .blue import DeployHoneytoken
+
+__all__.extend(['SecurityAwarenessTraining', 'DeployHoneytoken'])

@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict
 from netforge_rl.core.action import ActionEffect
 
 

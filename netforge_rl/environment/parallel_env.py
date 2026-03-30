@@ -7,7 +7,6 @@ from netforge_rl.core.observation import BaseObservation
 from netforge_rl.core.registry import action_registry
 from netforge_rl.core.physics import ConflictResolutionEngine
 from netforge_rl.environment.base_env import BaseNetForgeRLEnv
-import netforge_rl.actions  # Triggers decorator registration
 from netforge_rl.topologies.network_generator import NetworkGenerator
 from netforge_rl.agents.green_agent import GreenAgent
 

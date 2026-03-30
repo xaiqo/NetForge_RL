@@ -25,6 +25,8 @@ __all__ = [
     'KillProcess',
     'ShareIntelligence',
     'OverloadPLC',
+    'SpearPhishing',
 ]
 
 from .social_engineering import SpearPhishing
+

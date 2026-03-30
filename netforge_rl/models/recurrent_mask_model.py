@@ -1,11 +1,10 @@
-import numpy as np
 import torch
 from torch import nn
 
 from ray.rllib.models.torch.recurrent_net import RecurrentNetwork as TorchRNN
 from ray.rllib.utils.annotations import override
 from ray.rllib.utils.typing import ModelConfigDict, TensorType
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 
 class MaskedLSTMModel(TorchRNN, nn.Module):
