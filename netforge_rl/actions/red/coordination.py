@@ -1,6 +1,9 @@
-from marl_cyborg.core.action import BaseAction, ActionEffect
+from netforge_rl.core.action import BaseAction, ActionEffect
+from netforge_rl.core.registry import action_registry
 
 
+
+@action_registry.register('red_commander', 3)
 class ShareIntelligence(BaseAction):
     """Explicitly shares the current agent's 'Fog of War' knowledge graph with
 

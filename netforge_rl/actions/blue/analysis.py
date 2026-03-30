@@ -1,6 +1,9 @@
-from marl_cyborg.core.action import BaseAction, ActionEffect
+from netforge_rl.core.action import BaseAction, ActionEffect
+from netforge_rl.core.registry import action_registry
 
 
+
+@action_registry.register('blue_operator', 2)
 class Monitor(BaseAction):
     """Deploys active traffic analysis scanning on a specific subnet or host.
 
@@ -64,6 +67,7 @@ class Monitor(BaseAction):
         )
 
 
+@action_registry.register('blue_operator', 3)
 class Analyze(BaseAction):
     """Executes a forensic deep scan of a specific host for malware indicators
 

@@ -1,6 +1,9 @@
-from marl_cyborg.core.action import BaseAction, ActionEffect
+from netforge_rl.core.action import BaseAction, ActionEffect
+from netforge_rl.core.registry import action_registry
 
 
+
+@action_registry.register('red_operator', 1)
 class PrivilegeEscalate(BaseAction):
     """Executes a generic local privilege escalation exploit on a compromised
 
@@ -50,6 +53,7 @@ class PrivilegeEscalate(BaseAction):
         )
 
 
+@action_registry.register('red_operator', 6)
 class JuicyPotato(BaseAction):
     """Simulates the JuicyPotato local privilege escalation vector leveraging
 
@@ -103,6 +107,7 @@ class JuicyPotato(BaseAction):
         )
 
 
+@action_registry.register('red_operator', 7)
 class V4L2KernelExploit(BaseAction):
     """Executes a specific kernel-level vulnerability via Video4Linux (V4L2) on
 
@@ -155,4 +160,50 @@ class V4L2KernelExploit(BaseAction):
                 f'hosts/{self.target_ip}/compromised_by': self.agent_id,
             },
             observation_data={'privilege': 'V4L2 Kernel escalated'},
+        )
+
+
+@action_registry.register('red_operator', 9)
+class PassTheHash(BaseAction):
+    """Executes a lateral movement attack bypassing authentication using 
+    Kerberos / NTLM hashes extracted from a Domain Controller.
+
+    Args:
+        agent_id (str): Reference to the executing Red operator.
+        target_ip (str): Target IPv4 string (can be un-exploited if DC is cracked).
+    """
+
+    def __init__(self, agent_id: str, target_ip: str):
+        super().__init__(agent_id, target_ip=target_ip, cost=1)
+
+    def validate(self, global_state) -> bool:
+        """Validates if the agent has previously Rooted ANY Domain Controller."""
+        has_dc_hash = False
+        for host in global_state.all_hosts.values():
+            if host.is_domain_controller and host.privilege in ['Root', 'SYSTEM']:
+                if host.compromised_by == self.agent_id:
+                    has_dc_hash = True
+                    break
+        
+        if not has_dc_hash:
+            return False
+            
+        return global_state.can_route_to(self.target_ip)
+
+    def execute(self, global_state) -> ActionEffect:
+        """Applies instantaneous SYSTEM access based on Golden Ticket leverage.
+
+        Returns:
+            ActionEffect: Elevated root control unconditionally on target node.
+        """
+        from netforge_rl.core.commands import UpdateHostPrivilegeCommand
+
+        deltas = [
+            UpdateHostPrivilegeCommand(self.target_ip, 'Root', compromised_by=self.agent_id)
+        ]
+
+        return ActionEffect(
+            success=True,
+            state_deltas=deltas,
+            observation_data={'privilege': 'Pass-The-Hash lateral pivot successful.'},
         )

@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
-from marl_cyborg.core.action import BaseAction, ActionEffect
+from netforge_rl.core.action import BaseAction, ActionEffect
 
 if TYPE_CHECKING:
-    from marl_cyborg.core.state import GlobalNetworkState
+    from netforge_rl.core.state import GlobalNetworkState
 
 
 class IPFragmentationAction(BaseAction):

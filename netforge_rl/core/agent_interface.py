@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-from marl_cyborg.core.observation import BaseObservation
-from marl_cyborg.core.action import BaseAction
+from netforge_rl.core.observation import BaseObservation
+from netforge_rl.core.action import BaseAction
 
 
 class AgentInterface(ABC):

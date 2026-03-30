@@ -22,7 +22,7 @@ from scapy.utils import wrpcap
 
 
 class PCAPSynthesizer:
-    """Translates abstract RL actions (marl_cyborg_v3) into modeled Scapy
+    """Translates abstract RL actions (netforge_rl_v3) into modeled Scapy
 
     packets for offline IDS ML model training.
 

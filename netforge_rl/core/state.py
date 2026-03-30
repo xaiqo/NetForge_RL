@@ -1,4 +1,4 @@
-from typing import Dict, Set
+from typing import Dict, Set, Any
 
 
 class Host:
@@ -14,6 +14,9 @@ class Host:
         self.os: str = 'Unknown'  # OS profile assigned by NetworkGenerator
         self.services: list = []  # Running services (SSH, SMB, etc.)
         self.vulnerabilities: list = []  # CVEs present on this host
+        self.is_domain_controller: bool = False  # Allows Pass-the-Hash if Rooted
+        self.human_vulnerability_score: float = 0.5  # Phishability indicator (0.0 to 1.0)
+        self.contains_honeytokens: bool = False  # Triggers 100% confidence active deception traps
 
     def __repr__(self):
         return (
@@ -58,9 +61,19 @@ class GlobalNetworkState:
         self.agent_knowledge: Dict[str, Set[str]] = {}
         # Tracks remaining energy/budget for temporal action constraints
         self.agent_energy: Dict[str, int] = {}
+        # Advanced Attack Economics Constraints
+        self.agent_funds: Dict[str, int] = {}
+        self.agent_compute: Dict[str, int] = {}
+        self.business_downtime_score: float = 0.0
+        
         # Tracks asynchronous execution locks (ETA system)
         self.agent_locked_until: Dict[str, int] = {}
+        self.action_history: Dict[str, set] = {}
         self.pending_effects: list = []
+        self.siem_log_buffer: list = []
+        self.current_tick: int = 0
+        self.active_sessions: Dict[str, list] = {}
+        self.subnet_bandwidth: Dict[str, int] = {}
 
     def update_knowledge(self, agent_id: str, ip: str):
         """Adds an IP address to the agent's knowledge graph."""
@@ -80,12 +93,24 @@ class GlobalNetworkState:
         if host.subnet_cidr in self.subnets:
             self.subnets[host.subnet_cidr].add_host(host)
 
-    def apply_delta(self, delta_key: str, delta_value: str):
-        """Dynamically mutates the network graph based on dot-notation paths.
-
-        Example: apply_delta("hosts/10.0.0.5/status", "isolated")
-        Example: apply_delta("knowledge/red_agent_0/10.0.0.5", "True")
+    def apply_delta(self, delta_key: Any, delta_value: Any = None):
+        """Dynamically mutates the network graph.
+        
+        Now supports standard OOP `IStateDeltaCommand` objects executing their 
+        own state mutations, while retaining legacy string-path parsing for compatibility.
         """
+        # Command Pattern Standard Execution
+        if hasattr(delta_key, 'execute') and callable(getattr(delta_key, 'execute')):
+            delta_key.execute(self)
+            return
+
+        # Legacy String parsing (Deprecation Path)
+        if not isinstance(delta_key, str):
+            from netforge_rl.core.commands import IStateDeltaCommand
+            if isinstance(delta_key, IStateDeltaCommand):
+                delta_key.execute(self)
+            return
+
         parts = delta_key.split('/')
         if parts[0] == 'hosts' and len(parts) == 3:
             ip = parts[1]
@@ -108,6 +133,13 @@ class GlobalNetworkState:
             if 'global' not in self.firewalls:
                 self.firewalls['global'] = Firewall('global')
             self.firewalls['global'].block_port(subnet, port)
+
+        elif parts[0] == 'history' and len(parts) == 3:
+            agent_id = parts[1]
+            record = parts[2]
+            if agent_id not in self.action_history:
+                self.action_history[agent_id] = set()
+            self.action_history[agent_id].add(record)
 
     def can_route_to(self, target_ip: str, port: int = None) -> bool:
         """Evaluates complex network topology rules for routing

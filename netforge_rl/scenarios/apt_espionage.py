@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING, Dict
-from marl_cyborg.scenarios.base_scenario import BaseScenario
+from netforge_rl.scenarios.base_scenario import BaseScenario
 
 if TYPE_CHECKING:
-    from marl_cyborg.core.state import GlobalNetworkState
-    from marl_cyborg.core.action import ActionEffect
+    from netforge_rl.core.state import GlobalNetworkState
+    from netforge_rl.core.action import ActionEffect
 
 
 class AptEspionageScenario(BaseScenario):

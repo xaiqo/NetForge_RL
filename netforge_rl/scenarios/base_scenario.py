@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict
 
 if TYPE_CHECKING:
-    from marl_cyborg.core.state import GlobalNetworkState
-    from marl_cyborg.core.action import ActionEffect
+    from netforge_rl.core.state import GlobalNetworkState
+    from netforge_rl.core.action import ActionEffect
 
 
 class BaseScenario(ABC):

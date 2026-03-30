@@ -1,6 +1,9 @@
-from marl_cyborg.core.action import BaseAction, ActionEffect
+from netforge_rl.core.action import BaseAction, ActionEffect
+from netforge_rl.core.registry import action_registry
 
 
+
+@action_registry.register('red_commander', 0)
 class NetworkScan(BaseAction):
     """Executes a wide network scan across a specified subnet to map active IP
 
@@ -49,6 +52,7 @@ class NetworkScan(BaseAction):
         )
 
 
+@action_registry.register('red_commander', 1)
 class DiscoverRemoteSystems(BaseAction):
     """Executes a targeted Ping Sweep against a subnet to explicitly identify
 
@@ -108,6 +112,7 @@ class DiscoverRemoteSystems(BaseAction):
         )
 
 
+@action_registry.register('red_commander', 2)
 class DiscoverNetworkServices(BaseAction):
     """Executes an intrusive port scan against a specific host to enumerate
 
@@ -121,7 +126,7 @@ class DiscoverNetworkServices(BaseAction):
     """
 
     def __init__(self, agent_id: str, target_ip: str):
-        super().__init__(agent_id, target_ip=target_ip, cost=2)
+        super().__init__(agent_id, target_ip=target_ip, cost=2, duration=3)
 
     def validate(self, global_state) -> bool:
         """Confirms target host is active and packet routing is unblocked by
@@ -161,8 +166,11 @@ class DiscoverNetworkServices(BaseAction):
                 obs_data['os'] = host.os
                 obs_data['vulnerabilities'] = host.vulnerabilities
 
-        # Update knowledge that we scanned this host
-        knowledge_deltas = {f'knowledge/{self.agent_id}/{self.target_ip}': 'True'}
+        # Update knowledge that we scanned this host and add to history
+        knowledge_deltas = {
+            f'knowledge/{self.agent_id}/{self.target_ip}': 'True',
+            f'history/{self.agent_id}/DiscoverNetworkServices:{self.target_ip}': 'add'
+        }
 
         return ActionEffect(
             success=True, state_deltas=knowledge_deltas, observation_data=obs_data
