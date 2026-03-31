@@ -288,13 +288,24 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         # NLP-SIEM: generate structured event logs from resolved action effects
         for res_agent, res_effect in resolved_effects.items():
             action_name = type(
-                next((e['action'] for e in self.event_queue
-                      if e.get('agent') == res_agent), None) or type('', (), {})()
+                next(
+                    (
+                        e['action']
+                        for e in self.event_queue
+                        if e.get('agent') == res_agent
+                    ),
+                    None,
+                )
+                or type('', (), {})()
             ).__name__
             # Prefer fetching name from the event that just resolved
-            for ev in list(self.event_queue) + [e for e in [{  
-                'agent': k, 'action': type('_A', (), {'__name__': 'Unknown'})()}
-                for k in resolved_effects]]:
+            for ev in list(self.event_queue) + [
+                e
+                for e in [
+                    {'agent': k, 'action': type('_A', (), {'__name__': 'Unknown'})()}
+                    for k in resolved_effects
+                ]
+            ]:
                 if ev.get('agent') == res_agent:
                     action_name = type(ev.get('action', object())).__name__
                     break

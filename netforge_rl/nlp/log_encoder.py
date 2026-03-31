@@ -4,7 +4,7 @@ LogEncoder — NLP encoder for SIEM log strings.
 Dual-backend design:
   - 'tfidf'       (default): sklearn TF-IDF → 128-dim L2-normalised vector.
                   Zero extra dependencies. Fast. Good enough for RL training.
-  - 'transformer' (optional): sentence-transformers all-MiniLM-L6-v2 → 384-dim → 
+  - 'transformer' (optional): sentence-transformers all-MiniLM-L6-v2 → 384-dim →
                   projected to 128-dim via a learned linear layer.
                   Requires: pip install sentence-transformers torch
                   Use this for evaluation or fine-tuning runs.
@@ -12,6 +12,7 @@ Dual-backend design:
 Both backends expose the same encode() interface and output a
 float32 numpy array of shape (EMBEDDING_DIM,).
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -103,20 +104,26 @@ class LogEncoder:
 
         corpus = self._build_training_corpus()
 
-        pipeline = Pipeline([
-            ('tfidf', TfidfVectorizer(
-                analyzer='char_wb',
-                ngram_range=(3, 5),
-                max_features=4096,
-                sublinear_tf=True,
-            )),
-            ('svd', TruncatedSVD(n_components=EMBEDDING_DIM, random_state=42)),
-            ('norm', Normalizer(norm='l2')),
-        ])
+        pipeline = Pipeline(
+            [
+                (
+                    'tfidf',
+                    TfidfVectorizer(
+                        analyzer='char_wb',
+                        ngram_range=(3, 5),
+                        max_features=4096,
+                        sublinear_tf=True,
+                    ),
+                ),
+                ('svd', TruncatedSVD(n_components=EMBEDDING_DIM, random_state=42)),
+                ('norm', Normalizer(norm='l2')),
+            ]
+        )
         pipeline.fit(corpus)
         logger.info(
             'LogEncoder[tfidf]: fitted on %d corpus documents → %d-dim LSA.',
-            len(corpus), EMBEDDING_DIM
+            len(corpus),
+            EMBEDDING_DIM,
         )
 
         def encode_fn(text: str) -> np.ndarray:
@@ -143,8 +150,8 @@ class LogEncoder:
             proj /= np.linalg.norm(proj, axis=0, keepdims=True) + 1e-8
 
             logger.info(
-                'LogEncoder[transformer]: loaded all-MiniLM-L6-v2 '
-                '→ %d-dim projection.', EMBEDDING_DIM
+                'LogEncoder[transformer]: loaded all-MiniLM-L6-v2 → %d-dim projection.',
+                EMBEDDING_DIM,
             )
 
             def encode_fn(text: str) -> np.ndarray:
@@ -185,9 +192,18 @@ class LogEncoder:
 
         # 2. Synthetic template samples (generate 5 of each template type)
         from netforge_rl.siem.event_templates import (
-            evid_4624, evid_4625, evid_4648, evid_4688, evid_4768,
-            evid_4776, sysmon_1, sysmon_3, sysmon_10, sysmon_22,
+            evid_4624,
+            evid_4625,
+            evid_4648,
+            evid_4688,
+            evid_4768,
+            evid_4776,
+            sysmon_1,
+            sysmon_3,
+            sysmon_10,
+            sysmon_22,
         )
+
         sample_ips = ['10.0.0.1', '10.0.1.2', '192.168.1.5', '10.0.0.7', '10.0.1.9']
         for src, tgt in zip(sample_ips, reversed(sample_ips)):
             for fn in [evid_4624, evid_4625, evid_4648, evid_4776]:
@@ -202,7 +218,11 @@ class LogEncoder:
 
         if not corpus:
             # Ultimate fallback — at least something to fit on
-            corpus = ['Windows Event Log', 'Sysmon Network Connection', 'LSASS access detected']
+            corpus = [
+                'Windows Event Log',
+                'Sysmon Network Connection',
+                'LSASS access detected',
+            ]
 
         return corpus
 

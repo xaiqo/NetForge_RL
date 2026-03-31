@@ -5,6 +5,7 @@ Each template is a callable that accepts contextual kwargs and returns
 an authentic-looking Windows Event Log / Sysmon XML-style string.
 These are what a real Splunk/Elastic SIEM would ingest from a corporate network.
 """
+
 from __future__ import annotations
 
 import datetime
@@ -41,7 +42,9 @@ def evid_4624(src_ip: str, target_ip: str, username: str = 'SYSTEM', **kw) -> st
     )
 
 
-def evid_4625(src_ip: str, target_ip: str, username: str = 'Administrator', **kw) -> str:
+def evid_4625(
+    src_ip: str, target_ip: str, username: str = 'Administrator', **kw
+) -> str:
     """4625 — An account failed to log on."""
     failure_reasons = ['%%2313', '%%2304', '%%2308']
     return (
@@ -59,7 +62,9 @@ def evid_4625(src_ip: str, target_ip: str, username: str = 'Administrator', **kw
     )
 
 
-def evid_4648(src_ip: str, target_ip: str, username: str = 'Administrator', **kw) -> str:
+def evid_4648(
+    src_ip: str, target_ip: str, username: str = 'Administrator', **kw
+) -> str:
     """4648 — A logon was attempted using explicit credentials (Pass-the-Hash indicator)."""
     return (
         f'<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">\n'
@@ -75,7 +80,9 @@ def evid_4648(src_ip: str, target_ip: str, username: str = 'Administrator', **kw
     )
 
 
-def evid_4688(src_ip: str, process: str = 'cmd.exe', parent: str = 'explorer.exe', **kw) -> str:
+def evid_4688(
+    src_ip: str, process: str = 'cmd.exe', parent: str = 'explorer.exe', **kw
+) -> str:
     """4688 — A new process has been created."""
     cmdlines = {
         'cmd.exe': 'C:\\Windows\\system32\\cmd.exe /c whoami',
@@ -99,7 +106,9 @@ def evid_4688(src_ip: str, process: str = 'cmd.exe', parent: str = 'explorer.exe
     )
 
 
-def evid_4768(src_ip: str, target_ip: str, username: str = 'Administrator', **kw) -> str:
+def evid_4768(
+    src_ip: str, target_ip: str, username: str = 'Administrator', **kw
+) -> str:
     """4768 — A Kerberos authentication ticket (TGT) was requested."""
     return (
         f'<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">\n'
@@ -116,7 +125,9 @@ def evid_4768(src_ip: str, target_ip: str, username: str = 'Administrator', **kw
     )
 
 
-def evid_4776(src_ip: str, target_ip: str, username: str = 'Administrator', **kw) -> str:
+def evid_4776(
+    src_ip: str, target_ip: str, username: str = 'Administrator', **kw
+) -> str:
     """4776 — The computer attempted to validate credentials for an account (NTLM auth)."""
     return (
         f'<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">\n'
@@ -130,6 +141,7 @@ def evid_4776(src_ip: str, target_ip: str, username: str = 'Administrator', **kw
         f'  </EventData>\n'
         f'</Event>'
     )
+
 
 def sysmon_1(src_ip: str, process: str = 'powershell.exe', **kw) -> str:
     """Sysmon Event ID 1 — Process Creation."""
@@ -194,8 +206,11 @@ def sysmon_10(src_ip: str, **kw) -> str:
 def sysmon_22(src_ip: str, domain: str = 'corp.internal', **kw) -> str:
     """Sysmon Event ID 22 — DNS Query."""
     queries = [
-        f'dc01.{domain}', f'ldap.{domain}', f'kerberos.{domain}',
-        f'krbtgt.{domain}', 'time.windows.com',
+        f'dc01.{domain}',
+        f'ldap.{domain}',
+        f'kerberos.{domain}',
+        f'krbtgt.{domain}',
+        'time.windows.com',
     ]
     return (
         f'<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">\n'
@@ -226,7 +241,12 @@ ACTION_EVENT_MAP: ActionEventMap = {
     'ExploitHTTP_RFI': [
         (0.5, lambda s, t, **kw: sysmon_3(s, t, dst_port=80, **kw)),
         (0.3, lambda s, t, **kw: sysmon_1(s, process='cmd.exe', **kw)),
-        (0.2, lambda s, t, **kw: evid_4688(s, process='php-cgi.exe', parent='httpd.exe', **kw)),
+        (
+            0.2,
+            lambda s, t, **kw: evid_4688(
+                s, process='php-cgi.exe', parent='httpd.exe', **kw
+            ),
+        ),
     ],
     'ExploitRemoteService': [
         (0.4, lambda s, t, **kw: sysmon_3(s, t, dst_port=22, **kw)),
@@ -248,12 +268,21 @@ ACTION_EVENT_MAP: ActionEventMap = {
         (0.2, lambda s, t, **kw: evid_4776(s, t, **kw)),
     ],
     'NetworkScan': [
-        (0.6, lambda s, t, **kw: sysmon_3(s, t, dst_port=random.choice([22, 80, 443, 445]), **kw)),
+        (
+            0.6,
+            lambda s, t, **kw: sysmon_3(
+                s, t, dst_port=random.choice([22, 80, 443, 445]), **kw
+            ),
+        ),
         (0.4, lambda s, t, **kw: evid_4625(s, t, **kw)),
     ],
     'IsolateHost': [
-        (1.0, lambda s, t, **kw: evid_4688(s, process='netsh.exe',
-                                            parent='services.exe', **kw)),
+        (
+            1.0,
+            lambda s, t, **kw: evid_4688(
+                s, process='netsh.exe', parent='services.exe', **kw
+            ),
+        ),
     ],
     'RotateKerberos': [
         (0.6, lambda s, t, **kw: evid_4768(s, t, **kw)),

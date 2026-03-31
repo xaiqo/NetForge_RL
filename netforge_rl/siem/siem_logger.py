@@ -6,6 +6,7 @@ The log buffer lives on GlobalNetworkState.siem_log_buffer (already defined).
 Blue agents read from this buffer at observation time; it is the primary
 input to the NLP encoder in Pillar 2.
 """
+
 from __future__ import annotations
 
 import random
@@ -80,7 +81,8 @@ class SIEMLogger:
 
         # Pick two random live hosts and generate a benign connection event
         live_hosts = [
-            h for h in global_state.all_hosts.values()
+            h
+            for h in global_state.all_hosts.values()
             if h.status == 'online' and '169.254' not in h.ip
         ]
         if len(live_hosts) < 2:
@@ -131,7 +133,9 @@ class SIEMLogger:
             return next(iter(known))
         return '10.0.0.1'
 
-    def _push_to_buffer(self, log_line: str, global_state: 'GlobalNetworkState') -> None:
+    def _push_to_buffer(
+        self, log_line: str, global_state: 'GlobalNetworkState'
+    ) -> None:
         global_state.siem_log_buffer.append(log_line)
         # Rolling window — evict oldest entries beyond max
         if len(global_state.siem_log_buffer) > SIEM_BUFFER_MAX:

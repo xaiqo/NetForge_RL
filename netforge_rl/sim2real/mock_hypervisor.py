@@ -5,6 +5,7 @@ Returns realistic Metasploit/Meterpreter stdout strings sampled from
 the curated payload_library.json without requiring Docker or network access.
 Gaussian jitter is applied to latency_ms to simulate real network variance.
 """
+
 from __future__ import annotations
 
 import json
@@ -110,15 +111,15 @@ class MockHypervisor(BaseHypervisor):
         adjusted = max(0.02, min(0.98, base_rate + penalty))
         return self._rng.random() < adjusted
 
-    def _sample_stdout(
-        self, action_name: str, success: bool, target_ip: str
-    ) -> str:
+    def _sample_stdout(self, action_name: str, success: bool, target_ip: str) -> str:
         bucket = self._library.get(action_name)
         if bucket is None:
             # Fallback for actions not explicitly in the library
             if success:
                 return f'[*] {action_name} succeeded against {target_ip}\n[*] Session opened.'
-            return f'[-] {action_name} failed against {target_ip}\n[-] No session created.'
+            return (
+                f'[-] {action_name} failed against {target_ip}\n[-] No session created.'
+            )
 
         key = 'success' if success else 'failure'
         samples = bucket.get(key, [])
