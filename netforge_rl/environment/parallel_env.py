@@ -9,6 +9,7 @@ from netforge_rl.core.physics import ConflictResolutionEngine
 from netforge_rl.environment.base_env import BaseNetForgeRLEnv
 from netforge_rl.topologies.network_generator import NetworkGenerator
 from netforge_rl.agents.green_agent import GreenAgent
+from netforge_rl.sim2real.bridge import Sim2RealBridge
 
 
 class NetForgeRLEnv(BaseNetForgeRLEnv):
@@ -56,6 +57,14 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         self.global_state = self.network_generator.generate()
         self.resolution_engine = ConflictResolutionEngine()
 
+        # Sim2Real Bridge — defaults to 'sim' (mock) for training speed.
+        # Set sim2real_mode='real' in scenario_config for Docker evaluation.
+        sim2real_mode = (
+            scenario_config.get('sim2real_mode', 'sim') if scenario_config else 'sim'
+        )
+        self.sim2real_bridge = Sim2RealBridge(mode=sim2real_mode)
+        self.global_state.sim2real_bridge = self.sim2real_bridge
+
         # Native Gymnasium Spaces for PettingZoo API + RLlib Mapping
         self.observation_spaces = {
             agent: gym.spaces.Dict(
@@ -87,7 +96,11 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
 
         (Gymnasium style + PettingZoo).
         """
+        # Teardown any running containers from the previous episode
+        self.sim2real_bridge.teardown_all()
         self.global_state = self.network_generator.generate(seed=seed)
+        # Re-attach bridge to freshly generated state
+        self.global_state.sim2real_bridge = self.sim2real_bridge
         self.agents = self.possible_agents[:]
         self.global_state.agent_energy = {agent: 50 for agent in self.agents}
         self.global_state.agent_funds = {
