@@ -68,7 +68,7 @@ class GlobalNetworkState:
         self.agent_knowledge: Dict[str, Set[str]] = {}
         # Tracks logical identity tokens/hashes stolen during lateral movement (Zero Trust)
         self.agent_inventory: Dict[str, set] = {}
-        
+
         # Tracks remaining energy/budget for temporal action constraints
         self.agent_energy: Dict[str, int] = {}
         # Advanced Attack Economics Constraints
@@ -152,9 +152,11 @@ class GlobalNetworkState:
                 self.action_history[agent_id] = set()
             self.action_history[agent_id].add(record)
 
-    def can_route_to(self, target_ip: str, port: int = None, agent_id: str = None) -> bool:
+    def can_route_to(
+        self, target_ip: str, port: int = None, agent_id: str = None
+    ) -> bool:
         """Evaluates complex network topology rules for routing
-        reachability and explicit firewall port blocks. Now enforces 
+        reachability and explicit firewall port blocks. Now enforces
         strict Zero-Trust Identity rules.
         """
         if target_ip not in self.all_hosts:
@@ -192,7 +194,7 @@ class GlobalNetworkState:
         if target_subnet == '10.0.1.0/24':  # Secure
             if not (has_dmz_pivot or has_corp_pivot):
                 return False
-            
+
             # ZERO TRUST IDENTITY CHECK
             # If the Red agent attempts to cross into Secure, they MUST have the Domain Admin Token!
             if agent_id and agent_id.startswith('red'):
@@ -201,7 +203,7 @@ class GlobalNetworkState:
                 # OR if the target specifically requires 'Enterprise_Admin_Token', verify it.
                 if 'Enterprise_Admin_Token' not in agent_hash_inventory:
                     return False
-            
+
             return True
 
         return False

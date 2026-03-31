@@ -69,7 +69,7 @@ class KillProcess(BaseAction):
         Validates target reachability. Usually requires the host to be directly routable
         or already compromised in practice.
         """
-        return global_state.can_route_to(self.target_ip)
+        return global_state.can_route_to(self.target_ip, agent_id=self.agent_id)
 
     def execute(self, global_state) -> ActionEffect:
         """
@@ -97,7 +97,7 @@ class ExfiltrateData(BaseAction):
         host = global_state.all_hosts.get(self.target_ip)
         if not host or host.privilege not in ['User', 'Root']:
             return False
-        return global_state.can_route_to(self.target_ip)
+        return global_state.can_route_to(self.target_ip, agent_id=self.agent_id)
 
     def execute(self, global_state) -> ActionEffect:
         from netforge_rl.core.commands import ConsumeBandwidthCommand
