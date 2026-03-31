@@ -4,6 +4,7 @@ Abstract base for all hypervisor drivers.
 Defines the HypervisorResult dataclass and the BaseHypervisor interface
 that both MockHypervisor and DockerHypervisor must implement.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

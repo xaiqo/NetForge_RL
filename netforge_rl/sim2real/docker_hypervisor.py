@@ -10,6 +10,7 @@ then destroys the container immediately.
 
 Falls back gracefully to MockHypervisor if Docker daemon is unreachable.
 """
+
 from __future__ import annotations
 
 import logging
@@ -94,7 +95,6 @@ class DockerHypervisor(BaseHypervisor):
         self._active_containers: list = []
         self._available = self._connect()
 
-
     def dispatch(
         self,
         action_name: str,
@@ -156,7 +156,9 @@ class DockerHypervisor(BaseHypervisor):
             action_name=action_name,
             target_ip=target_ip,
             target_os=target_os,
-            container_id=getattr(container, 'short_id', 'unknown') if container else 'error',
+            container_id=getattr(container, 'short_id', 'unknown')
+            if container
+            else 'error',
         )
 
     def teardown_all(self) -> None:
@@ -202,7 +204,9 @@ class DockerHypervisor(BaseHypervisor):
                 driver='bridge',
                 internal=True,  # No external internet access — fully air-gapped
             )
-            logger.info('DockerHypervisor: created isolated network %s.', self.NETWORK_NAME)
+            logger.info(
+                'DockerHypervisor: created isolated network %s.', self.NETWORK_NAME
+            )
 
     def _mock_fallback(
         self, action_name: str, target_ip: str, target_os: str
