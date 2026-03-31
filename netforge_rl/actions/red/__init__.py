@@ -26,6 +26,9 @@ __all__ = [
     'ShareIntelligence',
     'OverloadPLC',
     'SpearPhishing',
+    'DumpLSASS',
+    'PassTheTicket',
 ]
 
 from .social_engineering import SpearPhishing
+from .post_exploitation import DumpLSASS, PassTheTicket

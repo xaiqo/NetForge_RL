@@ -11,6 +11,9 @@ from .blue import (
     DecoyTomcat,
     Misinform,
     ConfigureACL,
+    SecurityAwarenessTraining,
+    DeployHoneytoken,
+    RotateKerberos,
 )
 from .red import (
     NetworkScan,
@@ -27,6 +30,11 @@ from .red import (
     KillProcess,
     ShareIntelligence,
     OverloadPLC,
+    SpearPhishing,
+)
+from .red.post_exploitation import (
+    DumpLSASS,
+    PassTheTicket,
 )
 
 __all__ = [
@@ -42,6 +50,9 @@ __all__ = [
     'DecoyTomcat',
     'Misinform',
     'ConfigureACL',
+    'SecurityAwarenessTraining',
+    'DeployHoneytoken',
+    'RotateKerberos',
     'NetworkScan',
     'DiscoverRemoteSystems',
     'DiscoverNetworkServices',
@@ -56,11 +67,7 @@ __all__ = [
     'KillProcess',
     'ShareIntelligence',
     'OverloadPLC',
-    'SecurityAwarenessTraining',
-    'DeployHoneytoken',
+    'SpearPhishing',
+    'DumpLSASS',
+    'PassTheTicket',
 ]
-
-from .blue import SecurityAwarenessTraining
-from .blue import DeployHoneytoken
-
-__all__.extend(['SecurityAwarenessTraining', 'DeployHoneytoken'])
