@@ -31,4 +31,7 @@ __all__ = [
     'ConfigureACL',
     'SecurityAwarenessTraining',
     'DeployHoneytoken',
+    'RotateKerberos',
 ]
+
+from .identity import RotateKerberos
