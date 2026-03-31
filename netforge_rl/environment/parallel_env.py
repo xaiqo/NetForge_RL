@@ -10,6 +10,8 @@ from netforge_rl.environment.base_env import BaseNetForgeRLEnv
 from netforge_rl.topologies.network_generator import NetworkGenerator
 from netforge_rl.agents.green_agent import GreenAgent
 from netforge_rl.sim2real.bridge import Sim2RealBridge
+from netforge_rl.siem.siem_logger import SIEMLogger
+from netforge_rl.nlp.log_encoder import LogEncoder, EMBEDDING_DIM
 
 
 class NetForgeRLEnv(BaseNetForgeRLEnv):
@@ -65,7 +67,18 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         self.sim2real_bridge = Sim2RealBridge(mode=sim2real_mode)
         self.global_state.sim2real_bridge = self.sim2real_bridge
 
+        # NLP-SIEM Pipeline — stochastic event log generation + encoding.
+        # SIEMLogger converts action effects → Windows Event XML strings.
+        # LogEncoder converts those strings → 128-dim LSTM-compatible vectors.
+        nlp_backend = (
+            scenario_config.get('nlp_backend', 'tfidf') if scenario_config else 'tfidf'
+        )
+        self.siem_logger = SIEMLogger()
+        self.log_encoder = LogEncoder(backend=nlp_backend)
+
         # Native Gymnasium Spaces for PettingZoo API + RLlib Mapping
+        # Blue agents receive a 'siem_embedding' key with the encoded SIEM log vector.
+        # Red agents also get the key (zeroed) to keep obs space shapes uniform across agents.
         self.observation_spaces = {
             agent: gym.spaces.Dict(
                 {
@@ -74,7 +87,10 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                     ),
                     'action_mask': gym.spaces.Box(
                         low=0, high=1, shape=(62,), dtype=np.int8
-                    ),  # 12 action types + 50 IPs
+                    ),
+                    'siem_embedding': gym.spaces.Box(
+                        low=-1.0, high=1.0, shape=(EMBEDDING_DIM,), dtype=np.float32
+                    ),
                 }
             )
             for agent in self.possible_agents
@@ -108,6 +124,8 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         }
         self.global_state.agent_compute = {agent: 1000 for agent in self.agents}
         self.global_state.business_downtime_score = 0.0
+        # Clear SIEM log buffer on new episode
+        self.global_state.siem_log_buffer = []
         observations = {}
         for agent_id in self.agents:
             obs = BaseObservation(agent_id)
@@ -115,6 +133,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
             observations[agent_id] = {
                 'obs': obs.to_numpy(max_size=256),
                 'action_mask': self.action_mask(agent_id),
+                'siem_embedding': np.zeros(EMBEDDING_DIM, dtype=np.float32),
             }
         self.current_tick = 0
         self.event_queue = []
@@ -266,6 +285,27 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
 
         self._apply_state_deltas(resolved_effects)
 
+        # NLP-SIEM: generate structured event logs from resolved action effects
+        for res_agent, res_effect in resolved_effects.items():
+            action_name = type(
+                next((e['action'] for e in self.event_queue
+                      if e.get('agent') == res_agent), None) or type('', (), {})()
+            ).__name__
+            # Prefer fetching name from the event that just resolved
+            for ev in list(self.event_queue) + [e for e in [{  
+                'agent': k, 'action': type('_A', (), {'__name__': 'Unknown'})()}
+                for k in resolved_effects]]:
+                if ev.get('agent') == res_agent:
+                    action_name = type(ev.get('action', object())).__name__
+                    break
+            self.siem_logger.log_action(
+                action_name=action_name,
+                effect=res_effect,
+                global_state=self.global_state,
+                agent_id=res_agent,
+                target_ip=res_effect.observation_data.get('exploit'),
+            )
+
         # Generate True Positive telemetry from attacks that hit SIEM
         for res_agent, res_effect in resolved_effects.items():
             if 'red' in res_agent and res_effect.success:
@@ -295,6 +335,9 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                     }
                 )
 
+        # Generate background SIEM noise every tick
+        self.siem_logger.log_background_noise(self.global_state)
+
         observations = {}
         rewards = {}
         terminate = self.scenario.check_termination(self.global_state)
@@ -306,6 +349,10 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         is_truncated = self.current_tick >= self.max_ticks
         truncate = {agent: is_truncated for agent in self.agents}
 
+        # Encode recent SIEM logs once per step (shared cost for all Blue agents)
+        recent_logs = self.siem_logger.get_recent_logs(self.global_state, n=8)
+        siem_vec = self.log_encoder.encode_buffer(recent_logs, agg='mean')
+
         for agent in self.agents:
             obs = BaseObservation(agent)
             obs.update_from_state(self.global_state, resolved_effects)
@@ -315,7 +362,6 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                 commander_id = agent.replace('operator', 'commander')
                 if commander_id in agent_actions:
                     cmd_action = agent_actions[commander_id]
-                    # Normalize the MultiDiscrete action to a float between 0.0 and 1.0
                     cmd_val = (
                         (float(cmd_action[0]) / 12.0)
                         if getattr(cmd_action, '__iter__', False)
@@ -324,11 +370,18 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                     )
                     obs_array[0] = cmd_val
 
+            # Blue agents receive the live SIEM embedding; Red gets zeros.
+            # This gives Blue an information advantage that models real SOC telemetry.
+            if 'blue' in agent:
+                agent_siem_vec = siem_vec
+            else:
+                agent_siem_vec = np.zeros(EMBEDDING_DIM, dtype=np.float32)
+
             observations[agent] = {
                 'obs': obs_array,
                 'action_mask': self.action_mask(agent),
+                'siem_embedding': agent_siem_vec,
             }
-            # Reward shaping applied here natively factoring in immediate action outcomes
             agent_effect = resolved_effects.get(agent)
             rewards[agent] = self._calculate_reward(
                 agent, self.global_state, agent_effect
