@@ -1,10 +1,11 @@
 import pytest
 from netforge_rl.agents.green_agent import GreenAgent
-from netforge_rl.core.state import GlobalNetworkState, Host
+
 
 @pytest.fixture
 def green_agent():
     return GreenAgent()
+
 
 @pytest.mark.fast
 def test_green_agent_generate_noise_day(green_agent, global_state):
@@ -17,6 +18,7 @@ def test_green_agent_generate_noise_day(green_agent, global_state):
         assert 'type' in alert
         assert 'severity' in alert
 
+
 @pytest.mark.fast
 def test_green_agent_generate_noise_night(green_agent, global_state):
     """Verify that GreenAgent generates noise during the night (tick 110)."""
@@ -27,12 +29,14 @@ def test_green_agent_generate_noise_night(green_agent, global_state):
     for alert in noise['alerts']:
         assert 'type' in alert
 
+
 @pytest.mark.fast
 def test_green_agent_empty_hosts(green_agent):
     """Verify that GreenAgent handles empty host list gracefully."""
     mock_state = type('MockState', (), {'all_hosts': {}})()
     noise = green_agent.generate_noise(0, mock_state)
     assert noise == {'alerts': []}
+
 
 @pytest.mark.fast
 def test_green_agent_cycle_positions(green_agent, global_state):

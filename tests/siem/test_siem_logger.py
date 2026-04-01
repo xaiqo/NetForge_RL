@@ -81,7 +81,10 @@ def test_siem_best_guess_source_ip_fallbacks(siem_logger, global_state):
     # Knowledge but no privilege -> fallback to first known
     target_ip = '192.168.1.50'
     from netforge_rl.core.state import Host
-    global_state.register_host(Host(ip=target_ip, hostname="MockHost", subnet_cidr="192.168.1.0/24"))
+
+    global_state.register_host(
+        Host(ip=target_ip, hostname='MockHost', subnet_cidr='192.168.1.0/24')
+    )
     global_state.update_knowledge(agent, target_ip)
     global_state.all_hosts[target_ip].privilege = 'None'
     ip = siem_logger._infer_src_ip(agent, global_state)
