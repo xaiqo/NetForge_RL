@@ -55,7 +55,12 @@ class RansomwareScenario(BaseScenario):
 
         # ── ONE-TIME action bonuses (only on success) ─────────
         if effect.success and effect.state_deltas:
-            for delta_key, delta_val in effect.state_deltas.items():
+            deltas = (
+                effect.state_deltas.items()
+                if isinstance(effect.state_deltas, dict)
+                else []
+            )
+            for delta_key, delta_val in deltas:
                 # Initial compromise (None → User)
                 if 'privilege' in delta_key and delta_val == 'User':
                     reward += 3.0
@@ -118,9 +123,19 @@ class RansomwareScenario(BaseScenario):
     ) -> float:
         reward = 0.0
 
-        # ── ONE-TIME action bonuses ───────────────────────────
+        # ONE-TIME action bonuses
         if effect and effect.success and effect.state_deltas:
-            for delta_key, delta_val in effect.state_deltas.items():
+            # We iterate differently based on whether it's a dict or a list
+            deltas = (
+                effect.state_deltas.items()
+                if isinstance(effect.state_deltas, dict)
+                else []
+            )
+
+            # If it's a list (e.g. IdentityFlush), we don't have key/val pairs easily
+            # but we can look for specific attributes if needed.
+            # For now, we only reward dict-based state changes which are common for most actions.
+            for delta_key, delta_val in deltas:
                 # Successful isolation
                 if 'status' in delta_key and delta_val == 'isolated':
                     ip = delta_key.split('/')[1] if '/' in delta_key else None

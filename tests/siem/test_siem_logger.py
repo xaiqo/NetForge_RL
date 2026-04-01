@@ -67,3 +67,22 @@ def test_log_background_noise(siem_logger, global_state):
     assert len(global_state.siem_log_buffer) > initial_size
     latest_log = global_state.siem_log_buffer[-1]
     assert '[BACKGROUND]' in latest_log
+
+
+@pytest.mark.fast
+def test_siem_best_guess_source_ip_fallbacks(siem_logger, global_state):
+    """Verify SIEMLogger source IP fallback logic."""
+    agent = 'red_operator'
+    # No knowledge -> default IP
+    global_state.agent_knowledge[agent] = set()
+    ip = siem_logger._infer_src_ip(agent, global_state)
+    assert ip == '10.0.0.1'
+
+    # Knowledge but no privilege -> fallback to first known
+    target_ip = '192.168.1.50'
+    from netforge_rl.core.state import Host
+    global_state.register_host(Host(ip=target_ip, hostname="MockHost", subnet_cidr="192.168.1.0/24"))
+    global_state.update_knowledge(agent, target_ip)
+    global_state.all_hosts[target_ip].privilege = 'None'
+    ip = siem_logger._infer_src_ip(agent, global_state)
+    assert ip == target_ip

@@ -448,7 +448,11 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
             hosts_isolated = 0
             services_restored = 0
 
-            if agent_effect and agent_effect.success:
+            if (
+                agent_effect
+                and agent_effect.success
+                and isinstance(agent_effect.state_deltas, dict)
+            ):
                 for delta_key, delta_val in agent_effect.state_deltas.items():
                     if 'status' in delta_key and delta_val == 'isolated':
                         hosts_isolated += 1
