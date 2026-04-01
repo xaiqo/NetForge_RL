@@ -1,0 +1,112 @@
+site_name: NetForge RL
+site_description: Multi-Agent Cybersecurity Reinforcement Learning Environment
+site_author: Igor Jankowski
+site_url: https://xaiqo.github.io/NetForge_RL/
+repo_url: https://github.com/xaiqo/NetForge_RL
+repo_name: xaiqo/NetForge_RL
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: cyan
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: cyan
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/shield-lock
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/xaiqo/NetForge_RL
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/netforge-rl/
+  version:
+    provider: mike
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+
+nav:
+  - Home: index.md
+  - Quick Start: quickstart.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Zero-Trust Identity: architecture/zero_trust.md
+    - Sim2Real Bridge: architecture/sim2real.md
+    - NLP-SIEM Pipeline: architecture/nlp_siem.md
+  - Cybersecurity Reference:
+    - Environment Overview: cybersec/overview.md
+    - Threat Model & ATT&CK: cybersec/threat_model.md
+    - Red Team Actions: cybersec/red_actions.md
+    - Blue Team Actions: cybersec/blue_actions.md
+  - API Reference:
+    - Environment: api/environment.md
+    - Sim2Real: api/sim2real.md
+    - SIEM: api/siem.md
+    - NLP Encoder: api/nlp.md
+  - Training Guide:
+    - RLlib + LSTM: training/rllib.md
+    - Scenarios: training/scenarios.md
+  - Changelog: changelog.md
