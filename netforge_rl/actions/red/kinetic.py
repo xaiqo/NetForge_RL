@@ -41,7 +41,7 @@ class OverloadPLC(BaseAction):
         if host.privilege != 'Root':
             return False
 
-        return global_state.can_route_to(self.target_ip)
+        return global_state.can_route_to(self.target_ip, agent_id=self.agent_id)
 
     def execute(self, global_state) -> ActionEffect:
         import random

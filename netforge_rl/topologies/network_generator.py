@@ -124,6 +124,12 @@ class NetworkGenerator:
                     num_vulns = random.randint(0, min(2, len(potential_cves)))
                     host.vulnerabilities = random.sample(potential_cves, num_vulns)
 
+                    # ZTNA System Requirements (Secure Zone lockdown)
+                    if name == 'Secure':
+                        host.system_tokens.append('Enterprise_Admin_Token')
+                    elif name == 'Corporate':
+                        host.system_tokens.append(f'Local_Admin_{name}')
+
                     # Designate Domain Controllers only in Corp or Secure Windows servers
                     if 'Windows' in chosen_os and name in ['Corporate', 'Secure']:
                         if random.random() < 0.3:
@@ -135,12 +141,16 @@ class NetworkGenerator:
 
         # Assure at least 1 Domain Controller exists
         if domain_controllers:
-            random.choice(domain_controllers).is_domain_controller = True
+            dc = random.choice(domain_controllers)
+            dc.is_domain_controller = True
+            dc.cached_credentials.append('Enterprise_Admin_Token')
         else:
             # Force upgrade a random Windows host
             win_hosts = [h for h in active_hosts if 'Windows' in h.os]
             if win_hosts:
-                random.choice(win_hosts).is_domain_controller = True
+                dc = random.choice(win_hosts)
+                dc.is_domain_controller = True
+                dc.cached_credentials.append('Enterprise_Admin_Token')
 
         # Fill strictly to 50 nodes for Neural Network shape constant
         padding_needed = 50 - len(state.all_hosts)

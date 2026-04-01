@@ -29,7 +29,7 @@ class PrivilegeEscalate(BaseAction):
         host = global_state.all_hosts.get(self.target_ip)
         if not host or host.privilege != 'User':
             return False
-        return global_state.can_route_to(self.target_ip)
+        return global_state.can_route_to(self.target_ip, agent_id=self.agent_id)
 
     def execute(self, global_state) -> ActionEffect:
         """Applies the mathematical delta to elevate the agent's privilege
@@ -75,7 +75,7 @@ class JuicyPotato(BaseAction):
             return False
         if 'Windows' not in host.os:
             return False
-        return global_state.can_route_to(self.target_ip)
+        return global_state.can_route_to(self.target_ip, agent_id=self.agent_id)
 
     def execute(self, global_state) -> ActionEffect:
         """Processes the DCOM impersonation attack delta. Fails if target OS is
@@ -129,7 +129,7 @@ class V4L2KernelExploit(BaseAction):
             return False
         if 'Linux' not in host.os:
             return False
-        return global_state.can_route_to(self.target_ip)
+        return global_state.can_route_to(self.target_ip, agent_id=self.agent_id)
 
     def execute(self, global_state) -> ActionEffect:
         """Resolves the exploit outcome altering the target's privilege table.
@@ -187,7 +187,7 @@ class PassTheHash(BaseAction):
         if not has_dc_hash:
             return False
 
-        return global_state.can_route_to(self.target_ip)
+        return global_state.can_route_to(self.target_ip, agent_id=self.agent_id)
 
     def execute(self, global_state) -> ActionEffect:
         """Applies instantaneous SYSTEM access based on Golden Ticket leverage.

