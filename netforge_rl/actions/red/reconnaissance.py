@@ -112,6 +112,7 @@ class DiscoverRemoteSystems(BaseAction):
 
 
 @action_registry.register('red_commander', 2)
+@action_registry.register('red', 2)
 class DiscoverNetworkServices(BaseAction):
     """Executes an intrusive port scan against a specific host to enumerate
 

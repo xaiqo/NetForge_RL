@@ -4,7 +4,7 @@ from netforge_rl.core.action import BaseAction, ActionEffect
 from netforge_rl.core.registry import action_registry
 
 
-@action_registry.register('RotateKerberos', 'blue')
+@action_registry.register('blue_commander', 0)
 class RotateKerberos(BaseAction):
     """
     Apex Zero-Trust Action: Rotates Domain Kerberos TGT Keys globally.

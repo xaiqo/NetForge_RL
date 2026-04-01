@@ -2,7 +2,7 @@ from netforge_rl.core.action import BaseAction, ActionEffect
 from netforge_rl.core.registry import action_registry
 
 
-@action_registry.register('red_operator', 1)
+@action_registry.register('red', 1)
 class PrivilegeEscalate(BaseAction):
     """Executes a generic local privilege escalation exploit on a compromised
 
