@@ -7,7 +7,7 @@ from netforge_rl.core.commands import (
 )
 
 
-@action_registry.register('blue_operator', 0)
+@action_registry.register('blue', 0)
 class IsolateHost(BaseAction):
     """Disconnects a compromised host completely from the network
 
@@ -56,7 +56,7 @@ class IsolateHost(BaseAction):
         )
 
 
-@action_registry.register('blue_operator', 1)
+@action_registry.register('blue', 1)
 class RestoreHost(BaseAction):
     """Re-establishes network connectivity for a previously isolated host.
 
@@ -102,7 +102,7 @@ class RestoreHost(BaseAction):
         )
 
 
-@action_registry.register('blue_operator', 4)
+@action_registry.register('blue', 4)
 class Remove(BaseAction):
     """Evicts unauthorized threat actors from a compromised element.
 
@@ -149,7 +149,7 @@ class Remove(BaseAction):
         )
 
 
-@action_registry.register('blue_operator', 5)
+@action_registry.register('blue', 5)
 class RestoreFromBackup(BaseAction):
     """Executes a bare-metal imaging recovery to purge advanced persistent
 
@@ -199,7 +199,7 @@ class RestoreFromBackup(BaseAction):
         )
 
 
-@action_registry.register('blue_operator', 6)
+@action_registry.register('blue', 6)
 class ConfigureACL(BaseAction):
     """
     Dynamically modifies the implicit routing Firewall to block specific port
@@ -211,7 +211,7 @@ class ConfigureACL(BaseAction):
         port (int): The destination port to drop (e.g., 445).
     """
 
-    def __init__(self, agent_id: str, target_subnet: str, port: int):
+    def __init__(self, agent_id: str, target_subnet: str, port: int = 445):
         super().__init__(agent_id, target_ip=target_subnet, cost=2)
         self.port = port
 
@@ -234,7 +234,7 @@ class ConfigureACL(BaseAction):
         )
 
 
-@action_registry.register('blue_operator', 7)
+@action_registry.register('blue', 7)
 class SecurityAwarenessTraining(BaseAction):
     """
     Deploys rapid, intensive anti-phishing training to a targeted subnet.
