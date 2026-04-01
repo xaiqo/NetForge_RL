@@ -12,9 +12,6 @@ permissions:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./Cyborg
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python 3.12
@@ -32,9 +29,6 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./Cyborg
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python 3.12
@@ -69,5 +63,4 @@ jobs:
         pip install mkdocs mkdocs-material "mkdocstrings[python]"
         pip install -e .
     - name: Build documentation (Strict)
-      working-directory: ./Cyborg
       run: mkdocs build --strict
