@@ -23,8 +23,23 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
     "tensorboard>=2.17.0",
-    "ruff>=0.3.0"
+    "ruff>=0.3.0",
+    "scikit-learn>=1.0.0",
+]
+docs = [
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.25.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "fast: Mark pure unit tests (< 50ms)",
+    "integration: Mark multi-component tests",
+    "slow: Mark full env/encoder loops (> 3s)"
 ]
 
 [tool.ruff]
