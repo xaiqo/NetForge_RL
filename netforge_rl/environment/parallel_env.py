@@ -273,10 +273,17 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
             self.global_state.siem_log_buffer.append(anomaly)
 
         # 4. RESOLVE MATURE EVENTS
+        intended_effects = {}
+        action_metadata = {}
         remaining_events = []
         for event in self.event_queue:
             if self.current_tick >= event['completion_tick']:
-                intended_effects[event['agent']] = event['effect']
+                agent = event['agent']
+                intended_effects[agent] = event['effect']
+                action_metadata[agent] = {
+                    'name': type(event['action']).__name__,
+                    'target_ip': event.get('target_ip'),
+                }
             else:
                 remaining_events.append(event)
         self.event_queue = remaining_events
@@ -287,28 +294,11 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
 
         # NLP-SIEM: generate structured event logs from resolved action effects
         for res_agent, res_effect in resolved_effects.items():
-            action_name = type(
-                next(
-                    (
-                        e['action']
-                        for e in self.event_queue
-                        if e.get('agent') == res_agent
-                    ),
-                    None,
-                )
-                or type('', (), {})()
-            ).__name__
-            # Prefer fetching name from the event that just resolved
-            for ev in list(self.event_queue) + [
-                e
-                for e in [
-                    {'agent': k, 'action': type('_A', (), {'__name__': 'Unknown'})()}
-                    for k in resolved_effects
-                ]
-            ]:
-                if ev.get('agent') == res_agent:
-                    action_name = type(ev.get('action', object())).__name__
-                    break
+            meta = action_metadata.get(res_agent, {})
+            action_name = meta.get('name', 'UnknownAction')
+            target_ip = meta.get('target_ip') or res_effect.observation_data.get(
+                'exploit'
+            )
             self.siem_logger.log_action(
                 action_name=action_name,
                 effect=res_effect,

@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import random
 from pathlib import Path
 from typing import Literal
 
@@ -128,6 +129,11 @@ class LogEncoder:
 
         def encode_fn(text: str) -> np.ndarray:
             vec = pipeline.transform([text])[0]
+            # Ensure fixed output dimension even if SVD capped out
+            if vec.shape[0] < EMBEDDING_DIM:
+                padded = np.zeros(EMBEDDING_DIM, dtype=np.float32)
+                padded[: vec.shape[0]] = vec
+                return padded
             return vec.astype(np.float32)
 
         return encode_fn
@@ -208,13 +214,27 @@ class LogEncoder:
         for src, tgt in zip(sample_ips, reversed(sample_ips)):
             for fn in [evid_4624, evid_4625, evid_4648, evid_4776]:
                 corpus.append(fn(src, tgt))
-            corpus.append(evid_4688(src, process='mimikatz.exe'))
-            corpus.append(evid_4688(src, process='powershell.exe'))
+            # Add more variations to ensure > 128 samples
+            for proc in [
+                'cmd.exe',
+                'powershell.exe',
+                'mimikatz.exe',
+                'procdump.exe',
+                'net.exe',
+            ]:
+                corpus.append(evid_4688(src, process=proc))
+                corpus.append(sysmon_1(src, process=proc))
             corpus.append(evid_4768(src, tgt))
-            corpus.append(sysmon_1(src, process='powershell.exe'))
             corpus.append(sysmon_3(src, tgt, dst_port=445))
+            corpus.append(sysmon_3(src, tgt, dst_port=3389))
             corpus.append(sysmon_10(src))
             corpus.append(sysmon_22(src))
+
+        # Add 50 unique random noise strings to guarantee diversity
+        for i in range(50):
+            corpus.append(
+                f'Synthetic noise event {i} for dimension stability - {random.random()}'
+            )
 
         if not corpus:
             # Ultimate fallback — at least something to fit on

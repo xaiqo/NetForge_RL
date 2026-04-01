@@ -66,9 +66,12 @@ class BaseObservation:
             # Pull SIEM logs that have arrived (arrival_tick <= current_tick)
             if hasattr(global_state, 'siem_log_buffer'):
                 for log in global_state.siem_log_buffer:
-                    if log.get('arrival_tick', 0) <= getattr(
-                        global_state, 'current_tick', 0
-                    ):
+                    # Logs can be raw strings or telemetry dictionaries.
+                    arrival_tick = 0
+                    if isinstance(log, dict):
+                        arrival_tick = log.get('arrival_tick', 0)
+
+                    if arrival_tick <= getattr(global_state, 'current_tick', 0):
                         self.siem_alerts.append(log)
 
             self.network_telemetry['global_alert_level'] = np.random.uniform(0, 1)
