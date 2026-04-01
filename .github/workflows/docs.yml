@@ -1,0 +1,38 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install docs dependencies
+        working-directory: ./Cyborg
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material "mkdocstrings[python]"
+          pip install -e .
+
+      - name: Configure Git for gh-pages deploy
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Build and deploy docs
+        working-directory: ./Cyborg
+        run: mkdocs gh-deploy --force --clean
