@@ -65,7 +65,10 @@ class SIEMLogger:
 
         log_line = self._generate_event(action_name, src_ip, tgt_ip)
         if log_line:
-            self._push_to_buffer(log_line, global_state)
+            # Determine subnet for filtering
+            host = global_state.all_hosts.get(tgt_ip)
+            subnet = host.subnet_cidr if host else 'unknown'
+            self._push_to_buffer(log_line, subnet, global_state)
         return log_line
 
     def log_background_noise(self, global_state: 'GlobalNetworkState') -> None:
@@ -98,7 +101,7 @@ class SIEMLogger:
         norm_weights = [w / total for w in weights]
         chosen = self._rng.choices(callables, weights=norm_weights, k=1)[0]
         log_line = chosen(src.ip, dst.ip)
-        self._push_to_buffer(f'[BACKGROUND] {log_line}', global_state)
+        self._push_to_buffer(f'[BACKGROUND] {log_line}', src.subnet_cidr, global_state)
 
     def get_recent_logs(
         self,
@@ -106,7 +109,36 @@ class SIEMLogger:
         n: int = 8,
     ) -> list[str]:
         """Return the N most recent SIEM log lines from the buffer."""
-        return list(global_state.siem_log_buffer[-n:])
+        return [entry[0] for entry in global_state.siem_log_buffer[-n:]]
+
+    def get_filtered_logs(
+        self,
+        global_state: 'GlobalNetworkState',
+        subnet_tag: str | None = None,
+        n: int = 8,
+    ) -> list[str]:
+        """Return the N most recent logs filtered by subnet mapping.
+
+        Subnet tags are mapped to CIDRs:
+            dmz -> 192.168.1.0/24
+            internal -> 10.0.0.0/24
+            restricted -> 10.0.1.0/24
+        """
+        mapping = {
+            'dmz': '192.168.1.0/24',
+            'internal': '10.0.0.0/24',
+            'restricted': '10.0.1.0/24',
+        }
+        target_cidr = mapping.get(subnet_tag)
+        if not target_cidr:
+            return self.get_recent_logs(global_state, n)
+
+        filtered = [
+            entry[0]
+            for entry in global_state.siem_log_buffer
+            if entry[1] == target_cidr
+        ]
+        return filtered[-n:]
 
     def _generate_event(self, action_name: str, src_ip: str, tgt_ip: str) -> str | None:
         templates = ACTION_EVENT_MAP.get(action_name, ACTION_EVENT_MAP['_default'])
@@ -134,9 +166,12 @@ class SIEMLogger:
         return '10.0.0.1'
 
     def _push_to_buffer(
-        self, log_line: str, global_state: 'GlobalNetworkState'
+        self,
+        log_line: str,
+        subnet_cidr: str,
+        global_state: 'GlobalNetworkState',
     ) -> None:
-        global_state.siem_log_buffer.append(log_line)
+        global_state.siem_log_buffer.append((log_line, subnet_cidr))
         # Rolling window — evict oldest entries beyond max
         if len(global_state.siem_log_buffer) > SIEM_BUFFER_MAX:
             global_state.siem_log_buffer.pop(0)
