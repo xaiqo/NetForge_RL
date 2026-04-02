@@ -270,7 +270,9 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         prev_tick = self.current_tick
         if self.event_queue:
             # Jump to the next event completion time
-            next_event_tick = min(event['completion_tick'] for event in self.event_queue)
+            next_event_tick = min(
+                event['completion_tick'] for event in self.event_queue
+            )
             self.current_tick = max(self.current_tick + 1, next_event_tick)
         else:
             # No events queued; advance by 1
@@ -287,7 +289,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
             self.current_tick, self.global_state
         )
         for anomaly in noise_data.get('alerts', []):
-            # Arrival tick logic stays for delayed observation if needed, 
+            # Arrival tick logic stays for delayed observation if needed,
             # but for now we push raw strings + subnets to buffer
             self.siem_logger._push_to_buffer(
                 anomaly['data'], anomaly['subnet'], self.global_state
@@ -337,14 +339,15 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                 host = self.global_state.all_hosts.get(target_ip)
                 is_honeytoken_trap = host and host.contains_honeytokens
 
-                log_delay = 0 if is_honeytoken_trap else self.log_latency
-                
                 # Use templates for TP to ensure high-fidelity raw logs
                 from netforge_rl.siem.event_templates import sysmon_1
+
                 log_string = sysmon_1(res_agent, process='exploit_payload')
-                
+
                 self.siem_logger._push_to_buffer(
-                    log_string, host.subnet_cidr if host else 'unknown', self.global_state
+                    log_string,
+                    host.subnet_cidr if host else 'unknown',
+                    self.global_state,
                 )
 
         # Generate background SIEM noise every tick
@@ -379,10 +382,12 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
             obs.update_from_state(self.global_state, resolved_effects)
 
             obs_array = obs.to_numpy(max_size=256)
-            
+
             # Blue agents receive subnet-specific SIEM embeddings; Red gets zeros.
             if 'blue' in agent.lower():
-                agent_siem_vec = agent_siem_vecs.get(agent, np.zeros(EMBEDDING_DIM, dtype=np.float32))
+                agent_siem_vec = agent_siem_vecs.get(
+                    agent, np.zeros(EMBEDDING_DIM, dtype=np.float32)
+                )
             else:
                 agent_siem_vec = np.zeros(EMBEDDING_DIM, dtype=np.float32)
 
