@@ -8,7 +8,7 @@
 
 <p align="center">
   <b>A research-grade multi-agent cybersecurity environment for Sim2Real reinforcement learning.</b><br><br>
-  <a href="https://xaiqo.github.io/NetForge_RL/">📖 Documentation</a>
+  <a href="https://rfmlab.github.io/NetForge_RL/">📖 Documentation</a>
 </p>
 
 ---
@@ -19,7 +19,7 @@ NetForge RL is a **high-fidelity MARL cybersecurity simulator** derived from the
 
 Red and Blue agents compete across a three-tier enterprise network (DMZ → Corporate → Secure/OT) under realistic POMDP conditions — partial observability, authentic SIEM telemetry, and multi-dimensional budget constraints.
 
-> **Full documentation:** [https://xaiqo.github.io/NetForge_RL/](https://xaiqo.github.io/NetForge_RL/)
+> **Full documentation:** [https://rfmlab.github.io/NetForge_RL/](https://rfmlab.github.io/NetForge_RL/)
 
 ---
 
