@@ -12,6 +12,7 @@ class GreenAgent:
     def __init__(self, agent_id: str = 'green_agent_0'):
         self.agent_id = agent_id
         from netforge_rl.siem.event_templates import evid_4624, sysmon_3, evid_4688
+
         self._benign_templates = [evid_4624, sysmon_3, evid_4688]
 
     def generate_noise(self, current_tick: int, global_state: Any) -> Dict[str, Any]:
@@ -57,7 +58,10 @@ class GreenAgent:
             # Generate a false positive anomaly that could trip Blue's SIEM
             target = random.choice(hosts)
             from netforge_rl.siem.event_templates import evid_4625
-            log_string = evid_4625('unknown_external', target.ip, username='Administrator')
+
+            log_string = evid_4625(
+                'unknown_external', target.ip, username='Administrator'
+            )
             noise_logs.append(
                 {
                     'type': 'anomaly_xml',
