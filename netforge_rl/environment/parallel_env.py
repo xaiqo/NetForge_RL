@@ -5,6 +5,7 @@ import gymnasium as gym
 from netforge_rl.core.action import BaseAction, ActionEffect
 from netforge_rl.core.observation import BaseObservation
 from netforge_rl.core.registry import action_registry
+import netforge_rl.actions  # 🧬 Fusion: Trigger action registration decorators
 from netforge_rl.core.physics import ConflictResolutionEngine
 from netforge_rl.environment.base_env import BaseNetForgeRLEnv
 from netforge_rl.topologies.network_generator import NetworkGenerator
@@ -90,7 +91,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                         low=-1.0, high=1.0, shape=(256,), dtype=np.float32
                     ),
                     'action_mask': gym.spaces.Box(
-                        low=0, high=1, shape=(62,), dtype=np.int8
+                        low=0, high=1, shape=(32 + 50,), dtype=np.int8
                     ),
                     'siem_embedding': gym.spaces.Box(
                         low=-1.0, high=1.0, shape=(EMBEDDING_DIM,), dtype=np.float32
@@ -104,11 +105,11 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         }
         self.action_spaces = {
             agent: gym.spaces.MultiDiscrete(
-                [12, 50]
-            )  # [Action Type (max 12), Target IP Index (max 50 padded)]
+                [32, 50]
+            )  # [Action Type (max 32), Target IP Index (max 50 padded)]
             for agent in self.possible_agents
         }
-        self.max_ticks = 1000
+        self.max_ticks = scenario_config.get('max_ticks', 1000)
         self.current_tick = 0
         self.event_queue = []
 
@@ -131,8 +132,17 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         }
         self.global_state.agent_compute = {agent: 1000 for agent in self.agents}
         self.global_state.business_downtime_score = 0.0
-        # Clear SIEM log buffer on new episode
+        # SIEM log buffer and research metrics
         self.global_state.siem_log_buffer = []
+        self.episode_metrics = {
+            'infection_times': {}, # IP -> tick
+            'detection_times': {}, # IP -> tick (first SIEM alert)
+            'isolation_times': {}, # IP -> tick
+            'exfiltrated_data': 0.0,
+            'sla_uptime_sum': 0.0,
+            'steps_count': 0
+        }
+        
         observations = {}
         for agent_id in self.agents:
             obs = BaseObservation(agent_id)
@@ -159,18 +169,16 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         pruning out computationally redundant modulo duplicates.
         """
         # RLlib explicitly requires MultiDiscrete action masks to be concatenated flat boolean layers.
-        # Action space: [12 types, 50 IPs]. Therefore Mask shape = (62,)
-        mask = np.zeros(62, dtype=np.int8)
+        # Action space: [max 32 types, 50 IPs]. Therefore Mask shape = (82,)
+        mask = np.zeros(82, dtype=np.int8)
 
-        # 1. Action Type Dimension (0-11)
         if 'red' in agent.lower():
-            valid_action_types = 4 if 'commander' in agent.lower() else 9
+            valid_action_types = 17
         else:
-            valid_action_types = 5 if 'commander' in agent.lower() else 7
+            valid_action_types = 15
         mask[:valid_action_types] = 1
 
-        # 2. Target IP Dimension (12-61)
-        mask[12 : 12 + 50] = 1
+        mask[32 : 32 + 50] = 1
 
         return mask
 
@@ -233,6 +241,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
 
                 # Generate intended effect (though state might shift by completion time)
                 effect = action.execute(self.global_state)
+                effect.action = action  # 🧬 Link for reward attribution
 
                 self.global_state.agent_locked_until[agent] = completion_tick
                 self.event_queue.append(
@@ -492,6 +501,16 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
             info['successful_exploits'] = float(successful_exploits)
             info['hosts_isolated'] = float(hosts_isolated)
             info['services_restored'] = float(services_restored)
+            
+            if agent_effect:
+                target_ip = getattr(agent_effect.action, 'target_ip', None)
+                if target_ip and target_ip in self.global_state.all_hosts:
+                    ordered_hosts = sorted(list(self.global_state.all_hosts.keys()))
+                    info['target_ip_index'] = ordered_hosts.index(target_ip)
+                else:
+                    info['target_ip_index'] = None
+            else:
+                info['target_ip_index'] = None
 
             # Extra context for analysis
             info['agent_energy'] = float(self.global_state.agent_energy.get(agent, 0))
@@ -510,6 +529,48 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                 )
             )
 
+            sla_final = (self.episode_metrics['sla_uptime_sum'] / self.episode_metrics['steps_count'] 
+                         if self.episode_metrics['steps_count'] > 0 else 1.0)
+            info['SLA_Uptime_Percentage'] = float(sla_final)
+            
+            # Calculate MTTC (Mean Time To Containment)
+            mttc_vals = []
+            for ip, t_iso in self.episode_metrics['isolation_times'].items():
+                if ip in self.episode_metrics['infection_times']:
+                    mttc_vals.append(t_iso - self.episode_metrics['infection_times'][ip])
+            info['MTTC'] = float(sum(mttc_vals) / len(mttc_vals)) if mttc_vals else 0.0
+            
+            # Cumulative Impact
+            info['Total_Exfiltrated_Data'] = float(self.episode_metrics['exfiltrated_data'])
+
             infos[agent] = info
 
         return infos
+
+    def global_state_vector(self) -> np.ndarray:
+        """Returns a flattened 512-dim vector representing the true global network physics.
+        Used primarily for Centralized Critics (MAPPO, QMIX) during training.
+        """
+        vec = []
+        ordered_hosts = sorted(list(self.global_state.all_hosts.keys()))
+        
+        for i in range(50):
+            if i < len(ordered_hosts):
+                host = self.global_state.all_hosts[ordered_hosts[i]]
+                priv = {"None": 0.0, "User": 0.5, "Root": 1.0}.get(host.privilege, 0.0)
+                status = 1.0 if host.status == "online" else 0.0
+                decoy = 1.0 if host.decoy != "inactive" else 0.0
+                vec.extend([priv, status, decoy])
+            else:
+                vec.extend([0.0, 0.0, 0.0])
+        
+        vec.append(self.global_state.business_downtime_score / 100.0)
+        vec.append(float(self.current_tick) / float(self.max_ticks))
+        
+        for agent in self.possible_agents:
+            vec.append(float(self.global_state.agent_energy.get(agent, 0)) / 100.0)
+
+        result = np.zeros(512, dtype=np.float32)
+        v_arr = np.array(vec, dtype=np.float32)
+        result[:len(v_arr)] = v_arr
+        return result

@@ -5,12 +5,10 @@ import inspect
 class ActionRegistry:
     """A Factory Registry for dynamically tracking and instantiating
     BaseAction subclasses without monolithic if/else blocks.
-
-    Adheres strictly to the Open-Closed Principle.
     """
 
     def __init__(self):
-        # Maps (team, action_group_id) -> ActionClass
+        # Primary team mappings
         self._actions: Dict[str, Dict[int, Type]] = {
             'red': {},
             'red_commander': {},
@@ -32,20 +30,23 @@ class ActionRegistry:
     def get_action_class(self, agent_id: str, group_id: int) -> Optional[Type]:
         """Retrieves the class constructor for a specific integer offset."""
         if 'red' in agent_id.lower():
-            team = 'red_commander' if 'commander' in agent_id.lower() else 'red'
+            primary_team = 'red_commander' if 'commander' in agent_id.lower() else 'red'
         else:
-            team = 'blue_commander' if 'commander' in agent_id.lower() else 'blue'
+            primary_team = 'blue_commander' if 'commander' in agent_id.lower() else 'blue'
 
-        return self._actions.get(team, {}).get(group_id)
+        # Attempt to find the action in the primary team registry
+        action_cls = self._actions.get(primary_team, {}).get(group_id)
+        
+        # Fallback: Check if the action was registered specifically to the role (e.g., 'red_operator')
+        if not action_cls:
+            action_cls = self._actions.get(agent_id.lower(), {}).get(group_id)
+            
+        return action_cls
 
     def instantiate_action(
         self, agent_id: str, action_data: object, target_ips: list
     ) -> Optional[object]:
-        """Factory method to resolve the generic action payload to an instance.
-
-        Supports legacy integer decoding or advanced Hierarchical MultiDiscrete
-        arrays: [action_type_id, target_ip_index].
-        """
+        """Factory method to resolve the generic action payload to an instance."""
         if not target_ips:
             target_ips = ['127.0.0.1']
 
@@ -64,9 +65,9 @@ class ActionRegistry:
             action_group = action_int // len(target_ips)
 
             if 'red' in agent_id.lower():
-                mod = 4 if 'commander' in agent_id.lower() else 11
+                mod = 12 # Standardized bounds
             else:
-                mod = 5 if 'commander' in agent_id.lower() else 7
+                mod = 12
 
             action_type_id = action_group % mod
 
@@ -74,8 +75,7 @@ class ActionRegistry:
         if not ActionCls:
             return None
 
-        # Pass required kwargs dynamically based on the action archetype
-        # Determine accepted arguments dynamically
+        # Pass required kwargs dynamically
         sig = inspect.signature(ActionCls.__init__)
         params = sig.parameters
 
@@ -83,11 +83,9 @@ class ActionRegistry:
         if 'target_ip' in params:
             kwargs['target_ip'] = target_ip
         elif 'target_subnet' in params:
-            # Approximate subnet from target_ip for actions requiring Subnets
             parts = target_ip.split('.')
             kwargs['target_subnet'] = f'{parts[0]}.{parts[1]}.{parts[2]}.0/24'
         elif 'target_agent_id' in params:
-            # Map target_agent_id randomly or conventionally for Coordination actions
             kwargs['target_agent_id'] = (
                 'red_operator' if agent_id == 'red_commander' else 'red_commander'
             )

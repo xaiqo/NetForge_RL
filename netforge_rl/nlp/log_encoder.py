@@ -122,7 +122,7 @@ class LogEncoder:
         )
         pipeline.fit(corpus)
         logger.info(
-            'LogEncoder[tfidf]: fitted on %d corpus documents → %d-dim LSA.',
+            'LogEncoder[tfidf]: fitted on %d corpus documents -> %d-dim LSA.',
             len(corpus),
             EMBEDDING_DIM,
         )

@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 
 class ActionEffect:
     """Encapsulates the resulting state changes from an action for conflict
-
     resolution.
     """
 
@@ -18,17 +17,18 @@ class ActionEffect:
         state_deltas: Union[Dict[str, Any], List['IStateDeltaCommand']],
         observation_data: Dict[str, Any],
         eta: int = 0,
+        action: Optional['BaseAction'] = None,
     ):
         self.success = success
         self.state_deltas = state_deltas
         self.observation_data = observation_data
         self.eta = eta
+        self.action = action
+        self.cost = getattr(action, 'cost', 0) if action else 0
 
 
 class BaseAction(ABC):
     """Modular Base Action for the MARL CybORG Environment.
-
-    All highly specific network attacks (Layer 2 - Layer 7) inherit from this class.
     """
 
     def __init__(
@@ -52,14 +52,10 @@ class BaseAction(ABC):
         self.required_prior_state = required_prior_state
 
     def validate(self, global_state: 'GlobalNetworkState') -> bool:
-        """Checks if the action is physically possible in the current network
-        state (e.g., is there a route, are preconditions met).
-        """
         if self.target_ip and self.target_ip not in global_state.all_hosts:
             return False
 
         if self.required_prior_state:
-            # Check Action History state logic
             agent_history = global_state.action_history.get(self.agent_id, set())
             expected_record = f'{self.required_prior_state}:{self.target_ip}'
             if expected_record not in agent_history:
@@ -67,9 +63,7 @@ class BaseAction(ABC):
 
         if self.target_ip:
             host = global_state.all_hosts[self.target_ip]
-            # Simple declarative Zone constraints example
             if 'red' in self.agent_id.lower() and host.subnet_cidr == '10.0.1.0/24':
-                # Secure Data targets cannot be touched without pivoting via DMZ or Internal User privileges first
                 has_dmz = any(
                     h.privilege in ['User', 'Root']
                     for h in global_state.all_hosts.values()
@@ -87,9 +81,4 @@ class BaseAction(ABC):
 
     @abstractmethod
     def execute(self, global_state: 'GlobalNetworkState') -> ActionEffect:
-        """Computes the theoretical effect of the action.
-
-        Note: State is NOT mutated directly here. Mutations are returned via ActionEffect
-        to allow the Environment to resolve simultaneous multi-agent collisions.
-        """
         pass
