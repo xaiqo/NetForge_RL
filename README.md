@@ -19,7 +19,7 @@ NetForge RL is a **high-fidelity MARL cybersecurity simulator** derived from the
 
 Red and Blue agents compete across a three-tier enterprise network (DMZ → Corporate → Secure/OT) under realistic POMDP conditions — partial observability, authentic SIEM telemetry, and multi-dimensional budget constraints.
 
-> **Full documentation:** [https://rfmlab.github.io/NetForge_RL/](https://xaiqo.github.io/NetForge_RL/)
+> **Full documentation:** [https://xaiqo.github.io/NetForge_RL/](https://xaiqo.github.io/NetForge_RL/)
 
 ---
 
