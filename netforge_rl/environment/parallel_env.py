@@ -91,7 +91,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                         low=-1.0, high=1.0, shape=(256,), dtype=np.float32
                     ),
                     'action_mask': gym.spaces.Box(
-                        low=0, high=1, shape=(32 + 50,), dtype=np.int8
+                        low=0, high=1, shape=(32 + 100,), dtype=np.int8
                     ),
                     'siem_embedding': gym.spaces.Box(
                         low=-1.0, high=1.0, shape=(EMBEDDING_DIM,), dtype=np.float32
@@ -105,8 +105,8 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         }
         self.action_spaces = {
             agent: gym.spaces.MultiDiscrete(
-                [32, 50]
-            )  # [Action Type (max 32), Target IP Index (max 50 padded)]
+                [32, 100]
+            )  # [Action Type (max 32), Target IP Index (max 100 padded)]
             for agent in self.possible_agents
         }
         self.max_ticks = scenario_config.get('max_ticks', 1000)
@@ -169,8 +169,8 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         pruning out computationally redundant modulo duplicates.
         """
         # RLlib explicitly requires MultiDiscrete action masks to be concatenated flat boolean layers.
-        # Action space: [max 32 types, 50 IPs]. Therefore Mask shape = (82,)
-        mask = np.zeros(82, dtype=np.int8)
+        # Action space: [max 32 types, 100 IPs]. Therefore Mask shape = (132,)
+        mask = np.zeros(132, dtype=np.int8)
 
         if 'red' in agent.lower():
             valid_action_types = 17
@@ -178,7 +178,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
             valid_action_types = 15
         mask[:valid_action_types] = 1
 
-        mask[32 : 32 + 50] = 1
+        mask[32 : 32 + 100] = 1
 
         return mask
 
