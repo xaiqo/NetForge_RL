@@ -96,6 +96,9 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                     'siem_embedding': gym.spaces.Box(
                         low=-1.0, high=1.0, shape=(EMBEDDING_DIM,), dtype=np.float32
                     ),
+                    'adj_matrix': gym.spaces.Box(
+                        low=0.0, high=1.0, shape=(10000,), dtype=np.float32
+                    ),
                     'delta_t': gym.spaces.Box(
                         low=0.0, high=1.0, shape=(1,), dtype=np.float32
                     ),
@@ -151,6 +154,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                 'obs': obs.to_numpy(max_size=256),
                 'action_mask': self.action_mask(agent_id),
                 'siem_embedding': np.zeros(EMBEDDING_DIM, dtype=np.float32),
+                'adj_matrix': self.global_state.get_adjacency_matrix().flatten(),
                 'delta_t': np.zeros(1, dtype=np.float32),
             }
         self.current_tick = 0
@@ -404,6 +408,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                 'obs': obs_array,
                 'action_mask': self.action_mask(agent),
                 'siem_embedding': agent_siem_vec,
+                'adj_matrix': self.global_state.get_adjacency_matrix().flatten(),
                 'delta_t': np.array([delta_t_norm], dtype=np.float32),
             }
             agent_effect = resolved_effects.get(agent)

@@ -113,7 +113,10 @@ class BaseObservation:
                 vector[idx] = val
                 idx += 1
 
-        for ip, data in self.visible_hosts.items():
+        # Sort the visible hosts by IP to ensure deterministic tensor mapping for RL models
+        sorted_ips = sorted(list(self.visible_hosts.keys()))
+        for ip in sorted_ips:
+            data = self.visible_hosts[ip]
             if idx + 2 >= max_size:
                 break
 
