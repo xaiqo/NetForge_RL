@@ -559,7 +559,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         vec = []
         ordered_hosts = sorted(list(self.global_state.all_hosts.keys()))
         
-        for i in range(50):
+        for i in range(100):
             if i < len(ordered_hosts):
                 host = self.global_state.all_hosts[ordered_hosts[i]]
                 priv = {"None": 0.0, "User": 0.5, "Root": 1.0}.get(host.privilege, 0.0)
