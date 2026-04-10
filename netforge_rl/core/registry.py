@@ -32,15 +32,17 @@ class ActionRegistry:
         if 'red' in agent_id.lower():
             primary_team = 'red_commander' if 'commander' in agent_id.lower() else 'red'
         else:
-            primary_team = 'blue_commander' if 'commander' in agent_id.lower() else 'blue'
+            primary_team = (
+                'blue_commander' if 'commander' in agent_id.lower() else 'blue'
+            )
 
         # Attempt to find the action in the primary team registry
         action_cls = self._actions.get(primary_team, {}).get(group_id)
-        
+
         # Fallback: Check if the action was registered specifically to the role (e.g., 'red_operator')
         if not action_cls:
             action_cls = self._actions.get(agent_id.lower(), {}).get(group_id)
-            
+
         return action_cls
 
     def instantiate_action(
@@ -65,7 +67,7 @@ class ActionRegistry:
             action_group = action_int // len(target_ips)
 
             if 'red' in agent_id.lower():
-                mod = 12 # Standardized bounds
+                mod = 12  # Standardized bounds
             else:
                 mod = 12
 

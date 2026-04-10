@@ -28,8 +28,7 @@ class ActionEffect:
 
 
 class BaseAction(ABC):
-    """Modular Base Action for the MARL CybORG Environment.
-    """
+    """Modular Base Action for the MARL CybORG Environment."""
 
     def __init__(
         self,
