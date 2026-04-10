@@ -5,7 +5,7 @@ import gymnasium as gym
 from netforge_rl.core.action import BaseAction, ActionEffect
 from netforge_rl.core.observation import BaseObservation
 from netforge_rl.core.registry import action_registry
-import netforge_rl.actions  # noqa: F401 
+import netforge_rl.actions  # noqa: F401
 from netforge_rl.core.physics import ConflictResolutionEngine
 from netforge_rl.environment.base_env import BaseNetForgeRLEnv
 from netforge_rl.topologies.network_generator import NetworkGenerator
@@ -361,6 +361,21 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                     host.subnet_cidr if host else 'unknown',
                     self.global_state,
                 )
+
+                # Honeytoken Triggered Logic
+                if host and getattr(host, 'contains_honeytokens', False):
+
+                    honey_alert = {
+                        'signature': 'HONEYTOKEN_TRIGGERED',
+                        'severity': 10,
+                        'target': target_ip,
+                        'agent': res_agent,
+                    }
+                    self.siem_logger._push_to_buffer(
+                        honey_alert,  # We pass the dict directly; encoder will handle it via str()
+                        host.subnet_cidr,
+                        self.global_state,
+                    )
 
         # Generate background SIEM noise every tick
         self.siem_logger.log_background_noise(self.global_state)

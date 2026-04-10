@@ -51,6 +51,7 @@ class GreenAgent:
                         'type': 'benign_xml',
                         'data': log_string,
                         'subnet': source.subnet_cidr,
+                        'severity': 0,
                     }
                 )
 
@@ -67,6 +68,7 @@ class GreenAgent:
                     'type': 'anomaly_xml',
                     'data': log_string,
                     'subnet': target.subnet_cidr,
+                    'severity': 3,
                 }
             )
 
