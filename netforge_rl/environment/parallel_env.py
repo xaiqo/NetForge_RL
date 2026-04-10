@@ -364,7 +364,6 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
 
                 # Honeytoken Triggered Logic
                 if host and getattr(host, 'contains_honeytokens', False):
-
                     honey_alert = {
                         'signature': 'HONEYTOKEN_TRIGGERED',
                         'severity': 10,
