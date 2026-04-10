@@ -34,7 +34,7 @@ def test_siem_log_action(siem_logger, global_state):
     # P_LOG_ON_SUCCESS is 0.9. With seed 0, it should trigger.
     assert len(global_state.siem_log_buffer) > initial_buffer_size
     latest_log = global_state.siem_log_buffer[-1]
-    assert target_ip in latest_log
+    assert target_ip in latest_log[0]
 
 
 @pytest.mark.fast
@@ -42,10 +42,13 @@ def test_siem_buffer_rolling(siem_logger, global_state):
     """Verify the SIEM buffer rolls over at SIEM_BUFFER_MAX."""
     # Fill buffer
     for i in range(SIEM_BUFFER_MAX + 10):
-        siem_logger._push_to_buffer(f'Log_{i}', global_state)
+        siem_logger._push_to_buffer(f'Log_{i}', '10.0.0.0/24', global_state)
 
     assert len(global_state.siem_log_buffer) == SIEM_BUFFER_MAX
-    assert global_state.siem_log_buffer[-1] == f'Log_{SIEM_BUFFER_MAX + 9}'
+    assert global_state.siem_log_buffer[-1] == (
+        f'Log_{SIEM_BUFFER_MAX + 9}',
+        '10.0.0.0/24',
+    )
 
 
 @pytest.mark.fast
@@ -66,7 +69,7 @@ def test_log_background_noise(siem_logger, global_state):
 
     assert len(global_state.siem_log_buffer) > initial_size
     latest_log = global_state.siem_log_buffer[-1]
-    assert '[BACKGROUND]' in latest_log
+    assert '[BACKGROUND]' in latest_log[0]
 
 
 @pytest.mark.fast

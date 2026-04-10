@@ -45,7 +45,9 @@ def test_blue_siem_embedding_update(env_sim_local):
 
     # Inject a realistic log to ensure non-zero embedding
     fake_log = "<Event xmlns='...'><System><EventID>4624</EventID></System></Event>"
-    env_sim_local.siem_logger._push_to_buffer(fake_log, env_sim_local.global_state)
+    env_sim_local.siem_logger._push_to_buffer(
+        fake_log, '192.168.1.0/24', env_sim_local.global_state
+    )
 
     # Step to refresh observations
     actions = {a: env_sim_local.action_space(a).sample() for a in env_sim_local.agents}
@@ -53,12 +55,19 @@ def test_blue_siem_embedding_update(env_sim_local):
 
     # Check Blue agents
     blue_checked = False
-    for agent in ['blue_commander', 'blue_operator']:
-        if agent in obs:
+    for agent, agent_obs in obs.items():
+        if 'blue' in agent:
             blue_checked = True
-            emb = obs[agent]['siem_embedding']
-            # If LogEncoder is working, a non-empty string should result in non-zero vector
-            assert not np.allclose(emb, 0.0), f'Embedding for {agent} is zero'
+            emb = agent_obs['siem_embedding']
+            if 'dmz' in agent:
+                assert not np.allclose(emb, 0.0), (
+                    f'Embedding for {agent} is zero (expected signal)'
+                )
+            else:
+                # Other subnets should be zero since we only pushed to DMZ
+                assert np.allclose(emb, 0.0), (
+                    f'Embedding for {agent} is non-zero (expected noise-only)'
+                )
 
     assert blue_checked, 'No blue agents found in observations'
 
