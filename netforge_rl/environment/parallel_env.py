@@ -5,7 +5,7 @@ import gymnasium as gym
 from netforge_rl.core.action import BaseAction, ActionEffect
 from netforge_rl.core.observation import BaseObservation
 from netforge_rl.core.registry import action_registry
-import netforge_rl.actions  # 🧬 Fusion: Trigger action registration decorators
+import netforge_rl.actions  # noqa: F401 
 from netforge_rl.core.physics import ConflictResolutionEngine
 from netforge_rl.environment.base_env import BaseNetForgeRLEnv
 from netforge_rl.topologies.network_generator import NetworkGenerator
@@ -138,14 +138,14 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         # SIEM log buffer and research metrics
         self.global_state.siem_log_buffer = []
         self.episode_metrics = {
-            'infection_times': {}, # IP -> tick
-            'detection_times': {}, # IP -> tick (first SIEM alert)
-            'isolation_times': {}, # IP -> tick
+            'infection_times': {},  # IP -> tick
+            'detection_times': {},  # IP -> tick (first SIEM alert)
+            'isolation_times': {},  # IP -> tick
             'exfiltrated_data': 0.0,
             'sla_uptime_sum': 0.0,
-            'steps_count': 0
+            'steps_count': 0,
         }
-        
+
         observations = {}
         for agent_id in self.agents:
             obs = BaseObservation(agent_id)
@@ -350,7 +350,6 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
 
                 # Active Deception intercept
                 host = self.global_state.all_hosts.get(target_ip)
-                is_honeytoken_trap = host and host.contains_honeytokens
 
                 # Use templates for TP to ensure high-fidelity raw logs
                 from netforge_rl.siem.event_templates import sysmon_1
@@ -506,7 +505,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
             info['successful_exploits'] = float(successful_exploits)
             info['hosts_isolated'] = float(hosts_isolated)
             info['services_restored'] = float(services_restored)
-            
+
             if agent_effect:
                 target_ip = getattr(agent_effect.action, 'target_ip', None)
                 if target_ip and target_ip in self.global_state.all_hosts:
@@ -534,19 +533,27 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                 )
             )
 
-            sla_final = (self.episode_metrics['sla_uptime_sum'] / self.episode_metrics['steps_count'] 
-                         if self.episode_metrics['steps_count'] > 0 else 1.0)
+            sla_final = (
+                self.episode_metrics['sla_uptime_sum']
+                / self.episode_metrics['steps_count']
+                if self.episode_metrics['steps_count'] > 0
+                else 1.0
+            )
             info['SLA_Uptime_Percentage'] = float(sla_final)
-            
+
             # Calculate MTTC (Mean Time To Containment)
             mttc_vals = []
             for ip, t_iso in self.episode_metrics['isolation_times'].items():
                 if ip in self.episode_metrics['infection_times']:
-                    mttc_vals.append(t_iso - self.episode_metrics['infection_times'][ip])
+                    mttc_vals.append(
+                        t_iso - self.episode_metrics['infection_times'][ip]
+                    )
             info['MTTC'] = float(sum(mttc_vals) / len(mttc_vals)) if mttc_vals else 0.0
-            
+
             # Cumulative Impact
-            info['Total_Exfiltrated_Data'] = float(self.episode_metrics['exfiltrated_data'])
+            info['Total_Exfiltrated_Data'] = float(
+                self.episode_metrics['exfiltrated_data']
+            )
 
             infos[agent] = info
 
@@ -558,24 +565,24 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         """
         vec = []
         ordered_hosts = sorted(list(self.global_state.all_hosts.keys()))
-        
+
         for i in range(100):
             if i < len(ordered_hosts):
                 host = self.global_state.all_hosts[ordered_hosts[i]]
-                priv = {"None": 0.0, "User": 0.5, "Root": 1.0}.get(host.privilege, 0.0)
-                status = 1.0 if host.status == "online" else 0.0
-                decoy = 1.0 if host.decoy != "inactive" else 0.0
+                priv = {'None': 0.0, 'User': 0.5, 'Root': 1.0}.get(host.privilege, 0.0)
+                status = 1.0 if host.status == 'online' else 0.0
+                decoy = 1.0 if host.decoy != 'inactive' else 0.0
                 vec.extend([priv, status, decoy])
             else:
                 vec.extend([0.0, 0.0, 0.0])
-        
+
         vec.append(self.global_state.business_downtime_score / 100.0)
         vec.append(float(self.current_tick) / float(self.max_ticks))
-        
+
         for agent in self.possible_agents:
             vec.append(float(self.global_state.agent_energy.get(agent, 0)) / 100.0)
 
         result = np.zeros(512, dtype=np.float32)
         v_arr = np.array(vec, dtype=np.float32)
-        result[:len(v_arr)] = v_arr
+        result[: len(v_arr)] = v_arr
         return result
