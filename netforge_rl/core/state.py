@@ -1,3 +1,4 @@
+import numpy as np
 from typing import Dict, Set, Any
 
 
@@ -207,6 +208,27 @@ class GlobalNetworkState:
             return True
 
         return False
+
+    def get_adjacency_matrix(self) -> np.ndarray:
+        """Returns a 100x100 adjacency matrix representing routing capabilities between all hosts."""
+        import numpy as np
+
+        adj = np.zeros((100, 100), dtype=np.float32)
+
+        # We need a stable ordering of IPs, so we sort them
+        sorted_ips = sorted(list(self.all_hosts.keys()))
+
+        for i, src_ip in enumerate(sorted_ips):
+            for j, dst_ip in enumerate(sorted_ips):
+                if i == j:
+                    adj[i, j] = 1.0
+                elif self.can_route_to(dst_ip):
+                    # Simplification: if it can route to dst, we mark an edge.
+                    # A more accurate version would check if src_ip can route to dst_ip,
+                    # but can_route_to doesn't take src_ip. It assumes global routing rules based on subnets.
+                    adj[i, j] = 1.0
+
+        return adj
 
     def reallocate_dhcp(self):
         """Simulates dynamic mid-episode restructuring of the network.

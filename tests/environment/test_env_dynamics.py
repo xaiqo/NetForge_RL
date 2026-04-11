@@ -29,27 +29,37 @@ class MagicMockAction:
 def test_soc_budget_limit(env):
     """Verify that SOC (Blue) is limited to 2 active actions."""
     env.reset(seed=42)
+    agent = 'blue_dmz'
+    env.global_state.agent_energy[agent] = 50
+
+    # Manually fill the queue with 2 agents
     env.event_queue.append(
         {
             'completion_tick': 10,
-            'agent': 'blue_operator',
+            'agent': 'blue_internal',
             'action': MagicMockAction(),
-            'effect': None,
+            'effect': ActionEffect(success=True, state_deltas={}, observation_data={}),
             'target_ip': None,
         }
     )
     env.event_queue.append(
         {
             'completion_tick': 10,
-            'agent': 'blue_commander',
+            'agent': 'blue_restricted',
             'action': MagicMockAction(),
-            'effect': None,
+            'effect': ActionEffect(success=True, state_deltas={}, observation_data={}),
             'target_ip': None,
         }
     )
 
-    env.step({'blue_operator': 0})
-    assert len(env.event_queue) == 2
+    # Attempt to add a 3rd action via step
+    initial_energy = env.global_state.agent_energy[agent]
+    env.step({agent: 0})
+
+    # Reward/Energy check: 3rd action should be ignored, so energy should not decrease
+    assert env.global_state.agent_energy[agent] == initial_energy
+    # Queue should be empty now because the 2 original resolved at tick 10
+    assert len(env.event_queue) == 0
 
 
 @pytest.mark.fast
@@ -125,9 +135,10 @@ def test_honeytoken_trap_alert(env):
         # 4. Final verification
         all_logs = env.global_state.siem_log_buffer
         honey_alerts = [
-            log
+            log[0]
             for log in all_logs
-            if isinstance(log, dict) and log.get('signature') == 'HONEYTOKEN_TRIGGERED'
+            if isinstance(log[0], dict)
+            and log[0].get('signature') == 'HONEYTOKEN_TRIGGERED'
         ]
 
         assert len(honey_alerts) > 0, (

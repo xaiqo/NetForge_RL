@@ -22,7 +22,7 @@ def test_env_reset_shapes(env_sim_local):
 
         # Check shapes
         assert data['obs'].shape == (256,)
-        assert data['action_mask'].shape == (62,)
+        assert data['action_mask'].shape == (132,)
         assert data['siem_embedding'].shape == (128,)
 
         # Check types
@@ -44,6 +44,6 @@ def test_env_action_space_consistency(env_sim_local):
     """Verify action space shapes."""
     for agent in env_sim_local.agents:
         space = env_sim_local.action_space(agent)
-        # MultiDiscrete([12, 50])
-        assert space.nvec[0] == 12
-        assert space.nvec[1] == 50
+        # MultiDiscrete([32, 100])
+        assert space.nvec[0] == 32
+        assert space.nvec[1] == 100

@@ -11,6 +11,9 @@ class GreenAgent:
 
     def __init__(self, agent_id: str = 'green_agent_0'):
         self.agent_id = agent_id
+        from netforge_rl.siem.event_templates import evid_4624, sysmon_3, evid_4688
+
+        self._benign_templates = [evid_4624, sysmon_3, evid_4688]
 
     def generate_noise(self, current_tick: int, global_state: Any) -> Dict[str, Any]:
         """Generates random telemetry alerts based on the current tick's position
@@ -41,12 +44,13 @@ class GreenAgent:
             source = random.choice(hosts)
             target = random.choice(hosts)
             if source.ip != target.ip:
+                template = random.choice(self._benign_templates)
+                log_string = template(source.ip, target.ip)
                 noise_logs.append(
                     {
-                        'type': 'benign_traffic',
-                        'source': source.ip,
-                        'target': target.ip,
-                        'protocol': random.choice(['TCP', 'UDP', 'HTTP', 'DNS']),
+                        'type': 'benign_xml',
+                        'data': log_string,
+                        'subnet': source.subnet_cidr,
                         'severity': 0,
                     }
                 )
@@ -54,20 +58,17 @@ class GreenAgent:
         if random.random() < probability_of_false_positive:
             # Generate a false positive anomaly that could trip Blue's SIEM
             target = random.choice(hosts)
+            from netforge_rl.siem.event_templates import evid_4625
+
+            log_string = evid_4625(
+                'unknown_external', target.ip, username='Administrator'
+            )
             noise_logs.append(
                 {
-                    'type': 'anomaly',
-                    'source': 'unknown_external',
-                    'target': target.ip,
-                    'signature': random.choice(
-                        [
-                            'Failed_Login_Spike',
-                            'Malformed_Packet',
-                            'Suspicious_User_Agent',
-                        ]
-                    ),
-                    'severity': random.randint(1, 4),
-                    'false_positive': True,
+                    'type': 'anomaly_xml',
+                    'data': log_string,
+                    'subnet': target.subnet_cidr,
+                    'severity': 3,
                 }
             )
 

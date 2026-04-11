@@ -5,6 +5,7 @@ import gymnasium as gym
 from netforge_rl.core.action import BaseAction, ActionEffect
 from netforge_rl.core.observation import BaseObservation
 from netforge_rl.core.registry import action_registry
+import netforge_rl.actions  # noqa: F401
 from netforge_rl.core.physics import ConflictResolutionEngine
 from netforge_rl.environment.base_env import BaseNetForgeRLEnv
 from netforge_rl.topologies.network_generator import NetworkGenerator
@@ -12,6 +13,10 @@ from netforge_rl.agents.green_agent import GreenAgent
 from netforge_rl.sim2real.bridge import Sim2RealBridge
 from netforge_rl.siem.siem_logger import SIEMLogger
 from netforge_rl.nlp.log_encoder import LogEncoder, EMBEDDING_DIM
+
+
+# Normalization constant for Neural ODE integration
+MAX_ACTION_DURATION = 50.0
 
 
 class NetForgeRLEnv(BaseNetForgeRLEnv):
@@ -40,10 +45,10 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         )
         self.green_agent = GreenAgent()
         self.possible_agents = [
-            'red_commander',
             'red_operator',
-            'blue_commander',
-            'blue_operator',
+            'blue_dmz',
+            'blue_internal',
+            'blue_restricted',
         ]
         self.agents = self.possible_agents[:]
 
@@ -86,10 +91,16 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                         low=-1.0, high=1.0, shape=(256,), dtype=np.float32
                     ),
                     'action_mask': gym.spaces.Box(
-                        low=0, high=1, shape=(62,), dtype=np.int8
+                        low=0, high=1, shape=(32 + 100,), dtype=np.int8
                     ),
                     'siem_embedding': gym.spaces.Box(
                         low=-1.0, high=1.0, shape=(EMBEDDING_DIM,), dtype=np.float32
+                    ),
+                    'adj_matrix': gym.spaces.Box(
+                        low=0.0, high=1.0, shape=(10000,), dtype=np.float32
+                    ),
+                    'delta_t': gym.spaces.Box(
+                        low=0.0, high=1.0, shape=(1,), dtype=np.float32
                     ),
                 }
             )
@@ -97,11 +108,11 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         }
         self.action_spaces = {
             agent: gym.spaces.MultiDiscrete(
-                [12, 50]
-            )  # [Action Type (max 12), Target IP Index (max 50 padded)]
+                [32, 100]
+            )  # [Action Type (max 32), Target IP Index (max 100 padded)]
             for agent in self.possible_agents
         }
-        self.max_ticks = 1000
+        self.max_ticks = scenario_config.get('max_ticks', 1000)
         self.current_tick = 0
         self.event_queue = []
 
@@ -124,8 +135,17 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         }
         self.global_state.agent_compute = {agent: 1000 for agent in self.agents}
         self.global_state.business_downtime_score = 0.0
-        # Clear SIEM log buffer on new episode
+        # SIEM log buffer and research metrics
         self.global_state.siem_log_buffer = []
+        self.episode_metrics = {
+            'infection_times': {},  # IP -> tick
+            'detection_times': {},  # IP -> tick (first SIEM alert)
+            'isolation_times': {},  # IP -> tick
+            'exfiltrated_data': 0.0,
+            'sla_uptime_sum': 0.0,
+            'steps_count': 0,
+        }
+
         observations = {}
         for agent_id in self.agents:
             obs = BaseObservation(agent_id)
@@ -134,6 +154,8 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                 'obs': obs.to_numpy(max_size=256),
                 'action_mask': self.action_mask(agent_id),
                 'siem_embedding': np.zeros(EMBEDDING_DIM, dtype=np.float32),
+                'adj_matrix': self.global_state.get_adjacency_matrix().flatten(),
+                'delta_t': np.zeros(1, dtype=np.float32),
             }
         self.current_tick = 0
         self.event_queue = []
@@ -151,20 +173,16 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         pruning out computationally redundant modulo duplicates.
         """
         # RLlib explicitly requires MultiDiscrete action masks to be concatenated flat boolean layers.
-        # Action space: [12 types, 50 IPs]. Therefore Mask shape = (62,)
-        mask = np.zeros(62, dtype=np.int8)
+        # Action space: [max 32 types, 100 IPs]. Therefore Mask shape = (132,)
+        mask = np.zeros(132, dtype=np.int8)
 
-        # 1. Action Type Dimension (0-11)
         if 'red' in agent.lower():
-            valid_action_types = 4 if 'commander' in agent.lower() else 9
+            valid_action_types = 17
         else:
-            valid_action_types = 5 if 'commander' in agent.lower() else 7
+            valid_action_types = 15
         mask[:valid_action_types] = 1
 
-        # 2. Target IP Dimension (12-61)
-        target_ips = sorted(list(self.global_state.all_hosts.keys()))
-        num_targets = min(len(target_ips), 50)
-        mask[12 : 12 + num_targets] = 1
+        mask[32 : 32 + 100] = 1
 
         return mask
 
@@ -184,7 +202,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         2. INTERRUPTION LOGIC: Immediate cancel operations for specific defensive tasks.
         3. ADVANCE TIME: `current_tick` progresses by 1.
         4. RESOLVE MATURE EVENTS: Apply ActionEffects that reach `completion_tick`.
-        5. OBSERVATION: Agents receive POMDP updates every tick.
+        5. OBSERVATION: Agents receive POMDP updates with normalized Delta T info.
         """
         intended_effects = {}
 
@@ -227,6 +245,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
 
                 # Generate intended effect (though state might shift by completion time)
                 effect = action.execute(self.global_state)
+                effect.action = action  # 🧬 Link for reward attribution
 
                 self.global_state.agent_locked_until[agent] = completion_tick
                 self.event_queue.append(
@@ -236,6 +255,7 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                         'action': action,
                         'effect': effect,
                         'target_ip': getattr(action, 'target_ip', None),
+                        'start_tick': self.current_tick,
                     }
                 )
 
@@ -259,8 +279,21 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                             self.current_tick
                         )
 
-        # 3. ADVANCE TIME
-        self.current_tick += 1
+        # 3. ADVANCE TIME (EVENT-DRIVEN JUMP)
+        prev_tick = self.current_tick
+        if self.event_queue:
+            # Jump to the next event completion time
+            next_event_tick = min(
+                event['completion_tick'] for event in self.event_queue
+            )
+            self.current_tick = max(self.current_tick + 1, next_event_tick)
+        else:
+            # No events queued; advance by 1
+            self.current_tick += 1
+
+        delta_t = float(self.current_tick - prev_tick)
+        delta_t_norm = delta_t / MAX_ACTION_DURATION
+
         self.global_state.current_tick = self.current_tick
         self.global_state.subnet_bandwidth.clear()
 
@@ -269,8 +302,11 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
             self.current_tick, self.global_state
         )
         for anomaly in noise_data.get('alerts', []):
-            anomaly['arrival_tick'] = self.current_tick + self.log_latency
-            self.global_state.siem_log_buffer.append(anomaly)
+            # Arrival tick logic stays for delayed observation if needed,
+            # but for now we push raw strings + subnets to buffer
+            self.siem_logger._push_to_buffer(
+                anomaly['data'], anomaly['subnet'], self.global_state
+            )
 
         # 4. RESOLVE MATURE EVENTS
         intended_effects = {}
@@ -314,27 +350,31 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
 
                 # Active Deception intercept
                 host = self.global_state.all_hosts.get(target_ip)
-                is_honeytoken_trap = host and host.contains_honeytokens
 
-                signature = (
-                    'HONEYTOKEN_TRIGGERED'
-                    if is_honeytoken_trap
-                    else 'RED_ACTION_DETECTED'
+                # Use templates for TP to ensure high-fidelity raw logs
+                from netforge_rl.siem.event_templates import sysmon_1
+
+                log_string = sysmon_1(res_agent, process='exploit_payload')
+
+                self.siem_logger._push_to_buffer(
+                    log_string,
+                    host.subnet_cidr if host else 'unknown',
+                    self.global_state,
                 )
-                severity = 10 if is_honeytoken_trap else 5
-                log_delay = 0 if is_honeytoken_trap else self.log_latency
 
-                self.global_state.siem_log_buffer.append(
-                    {
-                        'type': 'anomaly',
-                        'source': res_agent,
+                # Honeytoken Triggered Logic
+                if host and getattr(host, 'contains_honeytokens', False):
+                    honey_alert = {
+                        'signature': 'HONEYTOKEN_TRIGGERED',
+                        'severity': 10,
                         'target': target_ip,
-                        'signature': signature,
-                        'severity': severity,
-                        'false_positive': False,
-                        'arrival_tick': self.current_tick + log_delay,
+                        'agent': res_agent,
                     }
-                )
+                    self.siem_logger._push_to_buffer(
+                        honey_alert,  # We pass the dict directly; encoder will handle it via str()
+                        host.subnet_cidr,
+                        self.global_state,
+                    )
 
         # Generate background SIEM noise every tick
         self.siem_logger.log_background_noise(self.global_state)
@@ -350,31 +390,30 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
         is_truncated = self.current_tick >= self.max_ticks
         truncate = {agent: is_truncated for agent in self.agents}
 
-        # Encode recent SIEM logs once per step (shared cost for all Blue agents)
-        recent_logs = self.siem_logger.get_recent_logs(self.global_state, n=8)
-        siem_vec = self.log_encoder.encode_buffer(recent_logs, agg='mean')
+        # Encode subnet-specific SIEM logs for decentralized Blue agents
+        agent_siem_vecs = {}
+        for agent in self.agents:
+            if 'blue' in agent.lower():
+                # Extract subnet tag (e.g., 'blue_dmz' -> 'dmz')
+                subnet_tag = agent.split('_')[1] if '_' in agent else 'dmz'
+                subset_logs = self.siem_logger.get_filtered_logs(
+                    self.global_state, subnet_tag=subnet_tag, n=8
+                )
+                agent_siem_vecs[agent] = self.log_encoder.encode_buffer(
+                    subset_logs, agg='mean'
+                )
 
         for agent in self.agents:
             obs = BaseObservation(agent)
             obs.update_from_state(self.global_state, resolved_effects)
 
             obs_array = obs.to_numpy(max_size=256)
-            if 'operator' in agent:
-                commander_id = agent.replace('operator', 'commander')
-                if commander_id in agent_actions:
-                    cmd_action = agent_actions[commander_id]
-                    cmd_val = (
-                        (float(cmd_action[0]) / 12.0)
-                        if getattr(cmd_action, '__iter__', False)
-                        and not isinstance(cmd_action, BaseAction)
-                        else 1.0
-                    )
-                    obs_array[0] = cmd_val
 
-            # Blue agents receive the live SIEM embedding; Red gets zeros.
-            # This gives Blue an information advantage that models real SOC telemetry.
-            if 'blue' in agent:
-                agent_siem_vec = siem_vec
+            # Blue agents receive subnet-specific SIEM embeddings; Red gets zeros.
+            if 'blue' in agent.lower():
+                agent_siem_vec = agent_siem_vecs.get(
+                    agent, np.zeros(EMBEDDING_DIM, dtype=np.float32)
+                )
             else:
                 agent_siem_vec = np.zeros(EMBEDDING_DIM, dtype=np.float32)
 
@@ -382,6 +421,8 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                 'obs': obs_array,
                 'action_mask': self.action_mask(agent),
                 'siem_embedding': agent_siem_vec,
+                'adj_matrix': self.global_state.get_adjacency_matrix().flatten(),
+                'delta_t': np.array([delta_t_norm], dtype=np.float32),
             }
             agent_effect = resolved_effects.get(agent)
             rewards[agent] = self._calculate_reward(
@@ -396,6 +437,12 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
 
         # ── Build info dicts with security metrics for callbacks ──
         infos = self._extract_agent_infos(observations, resolved_effects)
+
+        # Add temporal metadata for Neural ODE cells
+        for agent in self.agents:
+            if agent in infos:
+                infos[agent]['delta_t'] = delta_t
+                infos[agent]['delta_t_norm'] = delta_t_norm
 
         return observations, rewards, terminate, truncate, infos
 
@@ -473,6 +520,16 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
             info['hosts_isolated'] = float(hosts_isolated)
             info['services_restored'] = float(services_restored)
 
+            if agent_effect:
+                target_ip = getattr(agent_effect.action, 'target_ip', None)
+                if target_ip and target_ip in self.global_state.all_hosts:
+                    ordered_hosts = sorted(list(self.global_state.all_hosts.keys()))
+                    info['target_ip_index'] = ordered_hosts.index(target_ip)
+                else:
+                    info['target_ip_index'] = None
+            else:
+                info['target_ip_index'] = None
+
             # Extra context for analysis
             info['agent_energy'] = float(self.global_state.agent_energy.get(agent, 0))
             info['compromised_hosts'] = float(
@@ -490,6 +547,56 @@ class NetForgeRLEnv(BaseNetForgeRLEnv):
                 )
             )
 
+            sla_final = (
+                self.episode_metrics['sla_uptime_sum']
+                / self.episode_metrics['steps_count']
+                if self.episode_metrics['steps_count'] > 0
+                else 1.0
+            )
+            info['SLA_Uptime_Percentage'] = float(sla_final)
+
+            # Calculate MTTC (Mean Time To Containment)
+            mttc_vals = []
+            for ip, t_iso in self.episode_metrics['isolation_times'].items():
+                if ip in self.episode_metrics['infection_times']:
+                    mttc_vals.append(
+                        t_iso - self.episode_metrics['infection_times'][ip]
+                    )
+            info['MTTC'] = float(sum(mttc_vals) / len(mttc_vals)) if mttc_vals else 0.0
+
+            # Cumulative Impact
+            info['Total_Exfiltrated_Data'] = float(
+                self.episode_metrics['exfiltrated_data']
+            )
+
             infos[agent] = info
 
         return infos
+
+    def global_state_vector(self) -> np.ndarray:
+        """Returns a flattened 512-dim vector representing the true global network physics.
+        Used primarily for Centralized Critics (MAPPO, QMIX) during training.
+        """
+        vec = []
+        ordered_hosts = sorted(list(self.global_state.all_hosts.keys()))
+
+        for i in range(100):
+            if i < len(ordered_hosts):
+                host = self.global_state.all_hosts[ordered_hosts[i]]
+                priv = {'None': 0.0, 'User': 0.5, 'Root': 1.0}.get(host.privilege, 0.0)
+                status = 1.0 if host.status == 'online' else 0.0
+                decoy = 1.0 if host.decoy != 'inactive' else 0.0
+                vec.extend([priv, status, decoy])
+            else:
+                vec.extend([0.0, 0.0, 0.0])
+
+        vec.append(self.global_state.business_downtime_score / 100.0)
+        vec.append(float(self.current_tick) / float(self.max_ticks))
+
+        for agent in self.possible_agents:
+            vec.append(float(self.global_state.agent_energy.get(agent, 0)) / 100.0)
+
+        result = np.zeros(512, dtype=np.float32)
+        v_arr = np.array(vec, dtype=np.float32)
+        result[: len(v_arr)] = v_arr
+        return result

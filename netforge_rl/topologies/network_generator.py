@@ -33,7 +33,7 @@ class NetworkGenerator:
     def _generate_procedural(self) -> GlobalNetworkState:
         """Creates a randomized network using NetworkX hierarchical patterns.
 
-        Enforces a constant size of 50 hosts for Neural Network dimension consistency.
+        Enforces a constant size of 100 hosts for Neural Network dimension consistency.
         Active topology spans 15-30 nodes; the rest are instantiated as inactive padding.
         """
         import networkx as nx
@@ -152,8 +152,8 @@ class NetworkGenerator:
                 dc.is_domain_controller = True
                 dc.cached_credentials.append('Enterprise_Admin_Token')
 
-        # Fill strictly to 50 nodes for Neural Network shape constant
-        padding_needed = 50 - len(state.all_hosts)
+        # Fill strictly to 100 nodes for Neural Network shape constant
+        padding_needed = 100 - len(state.all_hosts)
         for p in range(padding_needed):
             pad_ip = f'169.254.0.{p + 1}'
             pad_host = Host(

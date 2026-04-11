@@ -21,7 +21,7 @@ class ConflictResolutionEngine:
         blue_defended_nodes = {}
         for blue_id in blue_agents:
             eff = effects[blue_id]
-            if eff.success:
+            if eff is not None and eff.success:
                 if isinstance(eff.state_deltas, dict):
                     for delta_key in eff.state_deltas.keys():
                         if 'hosts/' in delta_key:
@@ -35,7 +35,7 @@ class ConflictResolutionEngine:
         # 2. Evaluate Red attacks against the compiled simultaneous defenses
         for red_id in red_agents:
             red_eff = effects[red_id]
-            if not red_eff.success:
+            if red_eff is None or not red_eff.success:
                 continue
 
             collision_detected = False
